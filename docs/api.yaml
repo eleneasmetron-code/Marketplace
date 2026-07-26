@@ -1,0 +1,382 @@
+openapi: '3.0.3'
+info:
+  title: TaskBridge API
+  description: REST API маркетплейса digital-услуг TaskBridge (MVP)
+  version: '1.0.0'
+  contact:
+    name: TaskBridge Support
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [client, performer, admin] }
+        avatar: { type: string }
+        city: { type: string }
+        country: { type: string }
+        bio: { type: string }
+        rating: { type: number }
+        created_at: { type: string, format: date-time }
+
+    Task:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string, enum: [sites, design, ads, bots, automation, texts, presentations, analytics, other] }
+        budget: { type: number }
+        budget_type: { type: string, enum: [fixed, negotiable, hourly] }
+        deadline: { type: string, format: date }
+        urgency: { type: string, enum: [low, normal, high, urgent] }
+        status: { type: string, enum: [draft, published, assigned, in_progress, review, completed, cancelled, hidden] }
+        creator_id: { type: integer }
+        assigned_to: { type: integer, nullable: true }
+        required_skills: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+
+    Offer:
+      type: object
+      properties:
+        id: { type: integer }
+        task_id: { type: integer }
+        performer_id: { type: integer }
+        message: { type: string }
+        price: { type: number }
+        estimated_time: { type: string }
+        status: { type: string, enum: [sent, viewed, accepted, rejected, cancelled] }
+
+    Message:
+      type: object
+      properties:
+        id: { type: integer }
+        task_id: { type: integer }
+        sender_id: { type: integer }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+        read_at: { type: string, format: date-time, nullable: true }
+
+    Review:
+      type: object
+      properties:
+        id: { type: integer }
+        reviewer_id: { type: integer }
+        reviewee_id: { type: integer }
+        task_id: { type: integer }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        type: { type: string }
+        payload: { type: object }
+        seen: { type: integer }
+        created_at: { type: string, format: date-time }
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  timestamp: { type: string }
+
+  /api/auth/register:
+    post:
+      summary: Регистрация
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 6 }
+                role: { type: string, enum: [client, performer] }
+      responses:
+        '201':
+          description: Регистрация успешна
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '400': { description: Ошибка валидации }
+        '409': { description: Email уже занят }
+
+  /api/auth/login:
+    post:
+      summary: Вход
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { description: Неверные учётные данные }
+
+  /api/tasks:
+    get:
+      summary: Список задач
+      tags: [Tasks]
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, budget_desc, budget_asc, deadline, least_offers] }
+        - name: status
+          in: query
+          schema: { type: string, default: published }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Список задач
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks: { type: array, items: { $ref: '#/components/schemas/Task' } }
+                  total: { type: integer }
+
+    post:
+      summary: Создать задачу
+      tags: [Tasks]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, description, category]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                category: { type: string }
+                budget: { type: number }
+                budget_type: { type: string, enum: [fixed, negotiable, hourly] }
+                deadline: { type: string }
+                urgency: { type: string }
+                status: { type: string, enum: [draft, published] }
+                required_skills: { type: array, items: { type: string } }
+      responses:
+        '201': { description: Задача создана }
+        '400': { description: Ошибка валидации }
+        '401': { description: Не авторизован }
+        '403': { description: Только заказчик }
+
+  /api/tasks/{id}:
+    get:
+      summary: Детали задачи
+      tags: [Tasks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Полная информация о задаче }
+        '404': { description: Задача не найдена }
+
+  /api/tasks/{id}/offers:
+    post:
+      summary: Отправить отклик
+      tags: [Offers]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string }
+                price: { type: number }
+                estimated_time: { type: string }
+      responses:
+        '201': { description: Отклик создан }
+        '400': { description: Задача не принимает отклики }
+        '409': { description: Уже откликались }
+
+  /api/tasks/{id}/choose:
+    put:
+      summary: Выбрать исполнителя
+      tags: [Tasks]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offer_id]
+              properties:
+                offer_id: { type: integer }
+      responses:
+        '200': { description: Исполнитель выбран }
+
+  /api/tasks/{id}/chat:
+    get:
+      summary: Получить сообщения чата
+      tags: [Chat]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Список сообщений
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages: { type: array, items: { $ref: '#/components/schemas/Message' } }
+
+    post:
+      summary: Отправить сообщение
+      tags: [Chat]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+      responses:
+        '201': { description: Сообщение отправлено }
+
+  /api/reviews:
+    post:
+      summary: Оставить отзыв
+      tags: [Reviews]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task_id, rating]
+              properties:
+                task_id: { type: integer }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: string }
+      responses:
+        '201': { description: Отзыв создан }
+        '409': { description: Отзыв уже оставлен }
+
+  /api/admin/stats:
+    get:
+      summary: Статистика платформы
+      tags: [Admin]
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: Статистические данные }
+        '403': { description: Доступ запрещён }
+
+  /api/admin/users:
+    get:
+      summary: Список пользователей
+      tags: [Admin]
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: Список пользователей }
+
+  /api/admin/users/{id}:
+    patch:
+      summary: Заблокировать/разблокировать
+      tags: [Admin]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                blocked: { type: boolean }
+      responses:
+        '200': { description: Статус обновлён }

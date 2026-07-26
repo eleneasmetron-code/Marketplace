@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskBridge — Центр управления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Inter','sans-serif'], jakarta: ['"Plus Jakarta Sans"','sans-serif'] },
+    colors: { brand: '#FF4F00', magenta: '#BF00FF', page: '#1A1110' }
+  }}
+};
+</script>
+<style>
+  body { background: #1A1110; color: #fff; font-family: 'Inter', sans-serif; }
+  .orb-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; mix-blend-mode: screen; }
+  .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #FF4F00 0%, transparent 70%); top: -150px; right: -100px; animation: o1 30s infinite ease-in-out; }
+  .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, #BF00FF 0%, transparent 70%); bottom: -200px; left: -100px; animation: o2 35s infinite ease-in-out; }
+  @keyframes o1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,40px)} }
+  @keyframes o2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
+
+  .glass { background: rgba(255,255,255,0.035); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); border-radius: 1.25rem; }
+  .glass-strong { background: rgba(255,255,255,0.06); backdrop-filter: blur(50px); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.25rem; }
+  .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 10px 20px; border-radius: 12px; color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.2s; cursor: pointer; }
+  .sidebar-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .sidebar-link.active { color: #fff; background: rgba(255,79,0,0.15); border-left: 3px solid #FF4F00; }
+  .sidebar-link i { font-size: 20px; width: 24px; text-align: center; }
+  .badge { display: inline-flex; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+  .badge-orange { background: rgba(255,79,0,0.15); color: #FF4F00; }
+  .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .badge-red { background: rgba(239,68,68,0.15); color: #f87171; }
+  .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .badge-purple { background: rgba(168,85,247,0.15); color: #c084fc; }
+  .badge-yellow { background: rgba(234,179,8,0.15); color: #facc15; }
+  .badge-gray { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 16px; border-radius: 10px; font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s; border: none; }
+  .btn-orange { background: #FF4F00; color: #fff; } .btn-orange:hover { background: #e04500; }
+  .btn-ghost { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.08); } .btn-ghost:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .btn-danger { background: rgba(239,68,68,0.15); color: #f87171; } .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-success { background: rgba(34,197,94,0.15); color: #4ade80; } .btn-success:hover { background: rgba(34,197,94,0.25); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
+
+  .input { width: 100%; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 13px; background: rgba(255,255,255,0.03); color: #fff; outline: none; }
+  .input:focus { border-color: #FF4F00; box-shadow: 0 0 0 2px rgba(255,79,0,0.15); }
+  .input::placeholder { color: rgba(255,255,255,0.25); }
+  select.input { appearance: auto; } select.input option { background: #1A1110; }
+
+  table { width: 100%; font-size: 13px; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 14px; color: rgba(255,255,255,0.4); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .stat-num { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 2rem; line-height: 1; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: center; justify-content: center; }
+  .toast { position: fixed; bottom: 24px; right: 24px; z-index: 200; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 500; animation: toastIn 0.3s ease; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; height: 20px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="orb-bg"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+
+<!-- Login Screen -->
+<div id="login-screen" class="relative z-10 min-h-screen flex items-center justify-center p-4">
+  <div class="glass p-10 w-full max-w-md text-center">
+    <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-12 shadow-xl shadow-white/10">
+      <i class="ti ti-bridge text-[#1A1110] text-3xl"></i>
+    </div>
+    <h1 class="font-jakarta text-2xl font-extrabold mb-1">TaskBridge</h1>
+    <p class="text-white/40 text-sm mb-8">Центр управления платформой</p>
+    <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Email</label>
+        <input type="email" id="login-email" class="input" value="admin@taskbridge.local" required></div>
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Пароль</label>
+        <input type="password" id="login-pass" class="input" placeholder="Введите пароль" required></div>
+      <div id="login-error" class="text-red-400 text-sm hidden"></div>
+      <button type="submit" class="btn btn-orange w-full py-3 text-base">Войти</button>
+    </form>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app-shell" class="relative z-10 hidden min-h-screen">
+  <div class="flex">
+    <!-- Sidebar -->
+    <nav id="sidebar" class="w-64 min-h-screen bg-[#1A1110]/80 backdrop-blur-xl border-r border-white/[0.06] flex flex-col fixed left-0 top-0 bottom-0 z-50">
+      <div class="p-5 border-b border-white/[0.06]">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center rotate-12 shadow-lg shadow-white/10">
+            <i class="ti ti-bridge text-[#1A1110] text-lg"></i>
+          </div>
+          <div><div class="font-jakarta font-extrabold text-sm tracking-tight">TaskBridge</div><div class="text-[10px] text-white/30 uppercase tracking-widest">Админ-панель</div></div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+        <a href="#dashboard" class="sidebar-link" data-page="dashboard"><i class="ti ti-layout-dashboard"></i>Дашборд</a>
+        <a href="#moderation" class="sidebar-link" data-page="moderation"><i class="ti ti-shield-check"></i>Модерация<span id="nav-mod-badge" class="ml-auto badge badge-yellow hidden"></span></a>
+        <a href="#disputes" class="sidebar-link" data-page="disputes"><i class="ti ti-scale"></i>Споры<span id="nav-disp-badge" class="ml-auto badge badge-red hidden"></span></a>
+        <a href="#tasks" class="sidebar-link" data-page="tasks"><i class="ti ti-list-check"></i>Все задачи</a>
+        <a href="#users" class="sidebar-link" data-page="users"><i class="ti ti-users"></i>Пользователи</a>
+        <a href="#offers" class="sidebar-link" data-page="offers"><i class="ti ti-file-certificate"></i>Отклики</a>
+        <a href="#reports" class="sidebar-link" data-page="reports"><i class="ti ti-alert-triangle"></i>Жалобы<span id="nav-reports-badge" class="ml-auto badge badge-red hidden"></span></a>
+        <a href="#reviews" class="sidebar-link" data-page="reviews"><i class="ti ti-star"></i>Отзывы</a>
+        <a href="#chats" class="sidebar-link" data-page="chats"><i class="ti ti-messages"></i>Чаты</a>
+        <a href="#notifications" class="sidebar-link" data-page="notifications"><i class="ti ti-bell"></i>Рассылки</a>
+        <a href="#actions" class="sidebar-link" data-page="actions"><i class="ti ti-history"></i>Журнал</a>
+      </div>
+      <div class="p-4 border-t border-white/[0.06] text-[11px] text-white/20">v2.0.0</div>
+    </nav>
+
+    <!-- Content -->
+    <div class="flex-1 ml-64">
+      <!-- Top Bar -->
+      <header class="sticky top-0 z-40 bg-[#1A1110]/60 backdrop-blur-xl border-b border-white/[0.06] px-6 py-3 flex items-center justify-between">
+        <h2 id="page-title" class="font-jakarta text-lg font-bold"></h2>
+        <div class="flex items-center gap-4">
+          <span id="admin-name" class="text-sm text-white/50"></span>
+          <button onclick="logout()" class="btn btn-ghost btn-sm"><i class="ti ti-logout"></i>Выйти</button>
+        </div>
+      </header>
+      <main id="page-content" class="p-6"></main>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const API = '/api/admin';
+let token = localStorage.getItem('tb_admin_token');
+let admin = JSON.parse(localStorage.getItem('tb_admin') || 'null');
+let currentPage = 'dashboard';
+
+// ─── Auth ─────────────────────────────────────────────────
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    const r = await fetch(API + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Ошибка входа');
+    token = d.token; admin = d.admin;
+    localStorage.setItem('tb_admin_token', token);
+    localStorage.setItem('tb_admin', JSON.stringify(admin));
+    showApp();
+  } catch(err) {
+    const el = document.getElementById('login-error');
+    el.textContent = err.message; el.classList.remove('hidden');
+  }
+}
+
+function logout() {
+  token = null; admin = null;
+  localStorage.removeItem('tb_admin_token');
+  localStorage.removeItem('tb_admin');
+  document.getElementById('app-shell').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-shell').classList.remove('hidden');
+  document.getElementById('admin-name').textContent = admin?.name || 'Админ';
+  route();
+}
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  if (opts.body && typeof opts.body === 'string') { /* keep */ }
+  const r = await fetch(API + path, { ...opts, headers });
+  if (r.status === 401) { logout(); throw new Error('Сессия истекла'); }
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Ошибка сервера');
+  return d;
+}
+
+// ─── Routing ──────────────────────────────────────────────
+const TITLES = { dashboard:'Дашборд', moderation:'Модерация задач', disputes:'Споры', tasks:'Все задачи', users:'Пользователи', offers:'Отклики', reports:'Жалобы', reviews:'Отзывы', chats:'Чаты', notifications:'Рассылки', actions:'Журнал действий' };
+
+function route() {
+  const hash = location.hash.replace(/^#\/?/, '') || 'dashboard';
+  const [page, param] = hash.split('/');
+  currentPage = page;
+  document.getElementById('page-title').textContent = TITLES[page] || page;
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
+  const pc = document.getElementById('page-content');
+  pc.innerHTML = '<div class="space-y-4">' + Array(5).fill('<div class="skeleton" style="height:40px"></div>').join('') + '</div>';
+  pc.className = 'p-6 fade-in';
+
+  const handlers = { dashboard: renderDashboard, moderation: renderModeration, disputes: renderDisputes, tasks: renderTasks, users: renderUsers, offers: renderOffers, reports: renderReports, reviews: renderReviews, chats: () => param ? renderChatDetail(pc, param) : renderChats(pc), notifications: renderNotifications, actions: renderActions };
+  if (handlers[page]) handlers[page](pc);
+  else pc.innerHTML = '<p class="text-white/40">Страница не найдена</p>';
+}
+window.addEventListener('hashchange', route);
+
+// ─── Helpers ──────────────────────────────────────────────
+function esc(s) { if (s==null) return ''; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+function fmtDate(d) { if (!d) return '—'; const dt=new Date(d); return dt.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
+function fmtMoney(n) { return n ? n.toLocaleString('ru-RU') + ' ₽' : '—'; }
+function toast(msg, type='info') {
+  const colors = { info: 'bg-blue-600', success: 'bg-green-600', error: 'bg-red-600' };
+  const el = document.createElement('div');
+  el.className = `toast ${colors[type]||colors.info} text-white`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+async function confirmAction(msg, action) {
+  if (!confirm(msg)) return;
+  try { await action(); toast('Готово', 'success'); route(); } catch(e) { toast(e.message, 'error'); }
+}
+const STATUS_LABELS = { draft:'Черновик', published:'Опубликована', moderation:'Модерация', hidden:'Скрыта', assigned:'Исполнитель выбран', in_progress:'В работе', review:'На проверке', completed:'Завершена', cancelled:'Отменена', disputed:'Спорная', archived:'Архив' };
+const STATUS_BADGE = { draft:'badge-gray', published:'badge-green', moderation:'badge-yellow', hidden:'badge-red', assigned:'badge-blue', in_progress:'badge-purple', review:'badge-yellow', completed:'badge-green', cancelled:'badge-gray', disputed:'badge-red', archived:'badge-gray' };
+const ROLE_LABELS = { client:'Заказчик', performer:'Исполнитель', admin:'Админ' };
+const ROLE_BADGE = { client:'badge-blue', performer:'badge-purple', admin:'badge-orange' };
+const CAT_LABELS = { sites:'Сайты', design:'Дизайн', ads:'Реклама', bots:'Боты', automation:'Автоматизация', texts:'Тексты', presentations:'Презентации', analytics:'Аналитика', other:'Другое' };
+
+function statusBadge(s) { return `<span class="badge ${STATUS_BADGE[s]||'badge-gray'}">${STATUS_LABELS[s]||s}</span>`; }
+function roleBadge(r) { return `<span class="badge ${ROLE_BADGE[r]||'badge-gray'}">${ROLE_LABELS[r]||r}</span>`; }
+
+// ─── DASHBOARD ────────────────────────────────────────────
+async function renderDashboard(el) {
+  try {
+    const d = await api('/stats');
+    const modItem = (d.tasksByStatus || []).find(s => s.status === 'moderation');
+    const pendingTasks = modItem ? modItem.count : 0;
+    const dispItem = (d.tasksByStatus || []).find(s => s.status === 'disputed');
+    const disputedTasks = dispItem ? dispItem.count : 0;
+    const openReports = d.totalReports || 0;
+
+    // Update nav badges
+    const tb = document.getElementById('nav-tasks-badge');
+    if (tb) { if (pendingTasks > 0) { tb.textContent = pendingTasks; tb.classList.remove('hidden'); } else { tb.classList.add('hidden'); } }
+    const rb = document.getElementById('nav-reports-badge');
+    if (rb) { if (openReports > 0) { rb.textContent = openReports; rb.classList.remove('hidden'); } else { rb.classList.add('hidden'); } }
+    const mb = document.getElementById('nav-mod-badge');
+    if (mb) { if (pendingTasks > 0) { mb.textContent = pendingTasks; mb.classList.remove('hidden'); } else { mb.classList.add('hidden'); } }
+    const db2 = document.getElementById('nav-disp-badge');
+    if (db2) { if (disputedTasks > 0) { db2.textContent = disputedTasks; db2.classList.remove('hidden'); } else { db2.classList.add('hidden'); } }
+
+    el.innerHTML = `
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        ${statCard('ti-users','Пользователи', d.totalUsers, '#3B82F6')}
+        ${statCard('ti-list-check','Задачи', d.totalTasks, '#FF4F00')}
+        ${statCard('ti-file-certificate','Отклики', d.totalOffers, '#BF00FF')}
+        ${statCard('ti-star','Отзывы', d.totalReviews, '#22C55E')}
+        ${statCard('ti-check','Завершено', d.completedTasks, '#10B981')}
+        ${statCard('ti-alert-triangle','Жалобы', d.totalReports || 0, '#EF4444')}
+        ${statCard('ti-currency-rub','Оборот', fmtMoney(d.totalBudget || 0), '#F59E0B')}
+        ${statCard('ti-user-plus','Новых (неделя)', d.newUsersWeek || 0, '#8B5CF6')}
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-6 mb-6">
+        <!-- Tasks by Status -->
+        <div class="glass p-5">
+          <h3 class="font-jakarta font-bold mb-4 flex items-center gap-2"><i class="ti ti-chart-bar text-[#FF4F00]"></i>Задачи по статусам</h3>
+          <div class="space-y-3">
+            ${(d.tasksByStatus || []).map(item => `
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-white/50 w-24 truncate">${STATUS_LABELS[item.status]||item.status}</span>
+                <div class="flex-1 h-5 bg-white/[0.04] rounded-full overflow-hidden">
+                  <div class="h-full rounded-full" style="width:${Math.min(100, item.count/d.totalTasks*100)}%; background:${item.status==='completed'?'#22C55E':item.status==='cancelled'?'#6B7280':'#FF4F00'}"></div>
+                </div>
+                <span class="text-sm font-bold w-8 text-right">${item.count}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="glass p-5">
+          <h3 class="font-jakarta font-bold mb-4 flex items-center gap-2"><i class="ti ti-activity text-[#BF00FF]"></i>Последние действия</h3>
+          <div class="space-y-2 max-h-[280px] overflow-y-auto">
+            ${(d.recentActions || []).slice(0,10).map(a => `
+              <div class="flex items-start gap-3 py-2 border-b border-white/[0.04] last:border-0">
+                <div class="w-8 h-8 rounded-lg bg-[#FF4F00]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <i class="ti ti-settings text-[#FF4F00] text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm truncate"><strong>${esc(a.action)}</strong> <span class="text-white/40">${esc(a.details||'')}</span></p>
+                  <p class="text-xs text-white/25">${fmtDate(a.created_at)}</p>
+                </div>
+              </div>
+            `).join('') || '<p class="text-white/30 text-sm">Нет действий</p>'}
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="space-y-4">
+          <div class="glass p-5">
+            <h3 class="font-jakarta font-bold mb-4 flex items-center gap-2"><i class="ti ti-bolt text-[#F59E0B]"></i>Быстрые действия</h3>
+            <div class="space-y-2">
+              <a href="#tasks" class="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-colors">
+                <i class="ti ti-list-check text-[#FF4F00]"></i>
+                <div><div class="text-sm font-medium">Управление задачами</div><div class="text-xs text-white/30">${d.totalTasks} задач в системе</div></div>
+              </a>
+              <a href="#users" class="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-colors">
+                <i class="ti ti-users text-[#BF00FF]"></i>
+                <div><div class="text-sm font-medium">Пользователи</div><div class="text-xs text-white/30">${d.totalUsers} аккаунтов</div></div>
+              </a>
+              <a href="#reports" class="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-colors">
+                <i class="ti ti-alert-triangle text-[#EF4444]"></i>
+                <div><div class="text-sm font-medium">Жалобы</div><div class="text-xs text-white/30">${d.totalReports || 0} открытых</div></div>
+              </a>
+              <a href="#notifications" class="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-colors">
+                <i class="ti ti-send text-[#3B82F6]"></i>
+                <div><div class="text-sm font-medium">Отправить рассылку</div><div class="text-xs text-white/30">Всем или конкретному</div></div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+function statCard(icon, label, value, color) {
+  return `<div class="glass p-4 flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background:${color}15; border:1px solid ${color}30">
+      <i class="ti ${icon}" style="color:${color}; font-size:22px"></i>
+    </div>
+    <div><div class="stat-num" style="color:${color}">${value}</div><div class="text-xs text-white/40 mt-0.5">${label}</div></div>
+  </div>`;
+}
+
+// ─── MODERATION QUEUE ─────────────────────────────────────
+async function renderModeration(el) {
+  try {
+    const d = await api('/tasks?status=moderation&limit=50');
+    const tasks = d.tasks || [];
+
+    // Update nav badge
+    const mb = document.getElementById('nav-mod-badge');
+    if (tasks.length > 0) { mb.textContent = tasks.length; mb.classList.remove('hidden'); }
+    else { mb.classList.add('hidden'); }
+
+    el.innerHTML = `
+      <div class="mb-5">
+        <p class="text-white/40 text-sm">Задачи, ожидающие проверки модератором. Одобрите для публикации или скройте.</p>
+      </div>
+      ${tasks.length === 0 ? `
+        <div class="glass p-10 text-center">
+          <i class="ti ti-check text-green-400 text-4xl mb-3 block"></i>
+          <p class="text-white/40">Очередь модерации пуста</p>
+        </div>
+      ` : `<div class="space-y-4">${tasks.map(t => moderationCard(t)).join('')}</div>`}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+function moderationCard(t) {
+  return `
+    <div class="glass p-5 border-l-4 border-yellow-500">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="badge badge-yellow">Модерация</span>
+            <span class="badge badge-gray">${CAT_LABELS[t.category]||t.category}</span>
+            <span class="text-xs text-white/25">#${t.id}</span>
+          </div>
+          <h3 class="font-jakarta font-bold text-lg">${esc(t.title)}</h3>
+          <p class="text-sm text-white/50 mt-2">${esc(t.description?.slice(0, 300))}${t.description?.length > 300 ? '...' : ''}</p>
+        </div>
+        <div class="text-right flex-shrink-0 ml-4">
+          <p class="font-jakarta font-bold text-xl text-[#FF4F00]">${fmtMoney(t.budget)}</p>
+          <p class="text-xs text-white/30">${esc(t.creator_name||'')}</p>
+          <p class="text-xs text-white/20">${fmtDate(t.created_at)}</p>
+        </div>
+      </div>
+
+      ${t.expected_result ? `<div class="p-3 bg-white/[0.03] rounded-lg border border-white/[0.05] mb-3"><p class="text-xs text-white/40 uppercase tracking-wider mb-1">Ожидаемый результат</p><p class="text-sm text-white/60">${esc(t.expected_result)}</p></div>` : ''}
+
+      <div class="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
+        <a href="http://localhost:3000/#/tasks/${t.id}" target="_blank" class="btn btn-ghost btn-sm"><i class="ti ti-external-link"></i>Открыть</a>
+        <div class="flex-1"></div>
+        <button onclick="modAction(${t.id},'hidden')" class="btn btn-danger"><i class="ti ti-eye-off"></i>Отклонить и скрыть</button>
+        <button onclick="modAction(${t.id},'published')" class="btn btn-success"><i class="ti ti-check"></i>Одобрить</button>
+      </div>
+    </div>
+  `;
+}
+
+async function modAction(taskId, newStatus) {
+  const labels = { published: 'одобрить и опубликовать', hidden: 'отклонить и скрыть' };
+  if (!confirm(`${labels[newStatus]} задачу #${taskId}?`)) return;
+  try {
+    if (newStatus === 'hidden') {
+      await api(`/tasks/${taskId}/hide`, { method: 'PATCH', body: JSON.stringify({ hidden: 1 }) });
+    } else {
+      await api(`/tasks/${taskId}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+    }
+    toast(newStatus === 'published' ? 'Задача одобрена' : 'Задача отклонена', 'success');
+    route();
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+}
+
+// ─── DISPUTES ─────────────────────────────────────────────
+async function renderDisputes(el) {
+  try {
+    const d = await api('/tasks?status=disputed&limit=50');
+    const tasks = d.tasks || [];
+
+    // Update nav badge
+    const db = document.getElementById('nav-disp-badge');
+    if (tasks.length > 0) { db.textContent = tasks.length; db.classList.remove('hidden'); }
+    else { db.classList.add('hidden'); }
+
+    el.innerHTML = `
+      <div class="mb-5">
+        <p class="text-white/40 text-sm">Спорные задачи, требующие решения модератора. Рассмотрите ситуацию и примите решение.</p>
+      </div>
+      ${tasks.length === 0 ? `
+        <div class="glass p-10 text-center">
+          <i class="ti ti-check text-green-400 text-4xl mb-3 block"></i>
+          <p class="text-white/40">Нет открытых споров</p>
+        </div>
+      ` : `<div class="space-y-4">${tasks.map(t => disputeCard(t)).join('')}</div>`}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+function disputeCard(t) {
+  return `
+    <div class="glass p-5 border-l-4 border-red-500">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="badge badge-red">Спор</span>
+            <span class="text-xs text-white/25">#${t.id}</span>
+          </div>
+          <h3 class="font-jakarta font-bold text-lg">${esc(t.title)}</h3>
+        </div>
+        <p class="font-jakarta font-bold text-xl text-[#FF4F00]">${fmtMoney(t.budget)}</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+          <p class="text-xs text-white/40 uppercase tracking-wider mb-1">Заказчик</p>
+          <p class="font-medium">${esc(t.creator_name||'—')}</p>
+          <a href="http://localhost:3000/#/profile/${t.creator_id}" target="_blank" class="text-xs text-[#FF4F00] hover:underline">Профиль ↗</a>
+        </div>
+        <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+          <p class="text-xs text-white/40 uppercase tracking-wider mb-1">Исполнитель</p>
+          <p class="font-medium">${esc(t.assigned_name || t.assigned_user?.name || '—')}</p>
+          ${t.assigned_to ? `<a href="http://localhost:3000/#/profile/${t.assigned_to}" target="_blank" class="text-xs text-[#FF4F00] hover:underline">Профиль ↗</a>` : ''}
+        </div>
+      </div>
+
+      <p class="text-sm text-white/50 mb-4">${esc(t.description?.slice(0, 200))}${t.description?.length > 200 ? '...' : ''}</p>
+
+      <div class="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
+        <a href="http://localhost:3000/#/tasks/${t.id}" target="_blank" class="btn btn-ghost btn-sm"><i class="ti ti-external-link"></i>Открыть задачу</a>
+        <div class="flex-1"></div>
+        <button onclick="disputeAction(${t.id},'cancelled')" class="btn btn-danger"><i class="ti ti-x"></i>Отменить (в пользу заказчика)</button>
+        <button onclick="disputeAction(${t.id},'completed')" class="btn btn-success"><i class="ti ti-check"></i>Завершить (в пользу исполнителя)</button>
+        <button onclick="disputeAction(${t.id},'in_progress')" class="btn btn-ghost"><i class="ti ti-arrow-back"></i>Вернуть в работу</button>
+      </div>
+    </div>
+  `;
+}
+
+async function disputeAction(taskId, newStatus) {
+  const labels = { completed: 'завершить в пользу исполнителя', cancelled: 'отменить в пользу заказчика', in_progress: 'вернуть в работу' };
+  if (!confirm(`${labels[newStatus]} задачу #${taskId}?`)) return;
+  try {
+    await api(`/tasks/${taskId}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+    toast('Спор разрешён', 'success');
+    route();
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+}
+
+// ─── TASKS ────────────────────────────────────────────────
+let tasksPage = 1, tasksFilter = '', tasksStatus = '', tasksCat = '';
+async function renderTasks(el, page) {
+  tasksPage = page || 1;
+  try {
+    let qs = `?page=${tasksPage}&limit=20`;
+    if (tasksStatus) qs += `&status=${tasksStatus}`;
+    if (tasksCat) qs += `&category=${tasksCat}`;
+    if (tasksFilter) qs += `&search=${encodeURIComponent(tasksFilter)}`;
+    const d = await api('/tasks' + qs);
+
+    el.innerHTML = `
+      <div class="flex flex-wrap gap-3 mb-5">
+        <input type="text" class="input max-w-xs" placeholder="Поиск по названию..." value="${esc(tasksFilter)}" oninput="debounceTasksSearch(this.value)">
+        <select class="input max-w-[160px]" onchange="tasksStatus=this.value;tasksPage=1;renderTasks(document.getElementById('page-content'))">
+          <option value="">Все статусы</option>
+          ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${tasksStatus===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <select class="input max-w-[160px]" onchange="tasksCat=this.value;tasksPage=1;renderTasks(document.getElementById('page-content'))">
+          <option value="">Все категории</option>
+          ${Object.entries(CAT_LABELS).map(([k,v])=>`<option value="${k}" ${tasksCat===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="glass overflow-x-auto">
+        <table>
+          <thead><tr><th>#</th><th>Задача</th><th>Категория</th><th>Статус</th><th>Бюджет</th><th>Создатель</th><th>Откликов</th><th>Дата</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${d.tasks.map(t => `<tr>
+              <td class="text-white/30">${t.id}</td>
+              <td><a href="http://localhost:3000/#/tasks/${t.id}" target="_blank" class="text-[#FF4F00] hover:underline font-medium">${esc(t.title?.slice(0,50))}</a></td>
+              <td class="text-white/50">${CAT_LABELS[t.category]||t.category}</td>
+              <td>${statusBadge(t.status)}</td>
+              <td class="text-white/70">${fmtMoney(t.budget)}</td>
+              <td class="text-white/50">${esc(t.creator_name||'')}</td>
+              <td class="text-white/50">${t.offer_count||0}</td>
+              <td class="text-white/30 text-xs">${fmtDate(t.created_at)}</td>
+              <td>
+                <div class="flex gap-1 flex-wrap">
+                  ${t.status==='published'?`<button onclick="taskAction(${t.id},'moderation')" class="btn btn-ghost btn-sm">На модерацию</button>`:''}
+                  ${t.status==='moderation'?`<button onclick="taskAction(${t.id},'published')" class="btn btn-success btn-sm">Одобрить</button><button onclick="taskAction(${t.id},'hidden')" class="btn btn-danger btn-sm">Скрыть</button>`:''}
+                  ${t.hidden?`<button onclick="toggleHide(${t.id},false)" class="btn btn-success btn-sm">Показать</button>`:`<button onclick="toggleHide(${t.id},true)" class="btn btn-ghost btn-sm">Скрыть</button>`}
+                  ${['in_progress','assigned'].includes(t.status)?`<button onclick="taskAction(${t.id},'cancelled')" class="btn btn-danger btn-sm">Отменить</button>`:''}
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${pagination(d.page, d.totalPages, p => `renderTasks(document.getElementById('page-content'),${p})`)}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+let tasksSearchTimer;
+function debounceTasksSearch(v) { clearTimeout(tasksSearchTimer); tasksSearchTimer = setTimeout(() => { tasksFilter=v; tasksPage=1; renderTasks(document.getElementById('page-content')); }, 400); }
+
+async function taskAction(id, status) {
+  const labels = { published:'одобрить', hidden:'скрыть', moderation:'отправить на модерацию', cancelled:'отменить' };
+  if (!confirm(`Вы уверены, что хотите ${labels[status]||status} задачу #${id}?`)) return;
+  try {
+    if (status==='hidden') await api(`/tasks/${id}/hide`, { method:'PATCH' });
+    else await api(`/tasks/${id}/status`, { method:'PATCH', body:JSON.stringify({status}) });
+    toast('Статус изменён', 'success'); route();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function toggleHide(id, hide) {
+  try { await api(`/tasks/${id}/hide`, { method:'PATCH', body:JSON.stringify({hidden: hide?1:0}) }); toast(hide?'Задача скрыта':'Задача показана','success'); route(); } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── USERS ────────────────────────────────────────────────
+let usersPage=1, usersFilter='', usersRole='', usersBlocked='';
+async function renderUsers(el, page) {
+  usersPage = page||1;
+  try {
+    let qs = `?page=${usersPage}&limit=20`;
+    if (usersRole) qs += `&role=${usersRole}`;
+    if (usersBlocked) qs += `&blocked=${usersBlocked}`;
+    if (usersFilter) qs += `&search=${encodeURIComponent(usersFilter)}`;
+    const d = await api('/users' + qs);
+
+    el.innerHTML = `
+      <div class="flex flex-wrap gap-3 mb-5">
+        <input type="text" class="input max-w-xs" placeholder="Поиск по имени, email..." value="${esc(usersFilter)}" oninput="debounceUsersSearch(this.value)">
+        <select class="input max-w-[150px]" onchange="usersRole=this.value;usersPage=1;renderUsers(document.getElementById('page-content'))">
+          <option value="">Все роли</option>
+          <option value="client" ${usersRole==='client'?'selected':''}>Заказчик</option>
+          <option value="performer" ${usersRole==='performer'?'selected':''}>Исполнитель</option>
+          <option value="admin" ${usersRole==='admin'?'selected':''}>Админ</option>
+        </select>
+        <select class="input max-w-[150px]" onchange="usersBlocked=this.value;usersPage=1;renderUsers(document.getElementById('page-content'))">
+          <option value="">Все</option>
+          <option value="1" ${usersBlocked==='1'?'selected':''}>Заблокированные</option>
+          <option value="0" ${usersBlocked==='0'?'selected':''}>Активные</option>
+        </select>
+      </div>
+      <div class="glass overflow-x-auto">
+        <table>
+          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Роль</th><th>Рейтинг</th><th>Город</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${d.users.map(u => `<tr>
+              <td class="text-white/30">${u.id}</td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <img src="${u.avatar||`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.name)}&backgroundColor=FF4F00`}" class="w-7 h-7 rounded-full">
+                  <a href="http://localhost:3000/#/profile/${u.id}" target="_blank" class="text-[#FF4F00] hover:underline font-medium">${esc(u.name)}</a>
+                </div>
+              </td>
+              <td class="text-white/50 text-xs">${esc(u.email)}</td>
+              <td>${roleBadge(u.role)}</td>
+              <td class="text-white/60">⭐ ${u.rating?.toFixed(1)||'—'}</td>
+              <td class="text-white/40 text-xs">${esc(u.city||'')}</td>
+              <td>${u.blocked?'<span class="badge badge-red">Заблокирован</span>':'<span class="badge badge-green">Активен</span>'}</td>
+              <td>
+                <div class="flex gap-1">
+                  ${u.blocked
+                    ? `<button onclick="toggleBlock(${u.id},false)" class="btn btn-success btn-sm">Разблок</button>`
+                    : `<button onclick="toggleBlock(${u.id},true)" class="btn btn-danger btn-sm">Блок</button>`}
+                  ${u.role!=='admin'?`<button onclick="changeRole(${u.id},'${u.role==='client'?'performer':'client'}')" class="btn btn-ghost btn-sm">→ ${u.role==='client'?'Исполнитель':'Заказчик'}</button>`:''}
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${pagination(d.page, d.totalPages, p => `renderUsers(document.getElementById('page-content'),${p})`)}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+let usersSearchTimer;
+function debounceUsersSearch(v) { clearTimeout(usersSearchTimer); usersSearchTimer = setTimeout(() => { usersFilter=v; usersPage=1; renderUsers(document.getElementById('page-content')); }, 400); }
+
+async function toggleBlock(id, block) {
+  const msg = block ? `Заблокировать пользователя #${id}?` : `Разблокировать пользователя #${id}?`;
+  await confirmAction(msg, async () => {
+    await api(`/users/${id}/block`, { method:'PATCH', body:JSON.stringify({blocked:block?1:0}) });
+  });
+}
+
+async function changeRole(id, newRole) {
+  await confirmAction(`Сменить роль пользователя #${id} на ${ROLE_LABELS[newRole]}?`, async () => {
+    await api(`/users/${id}/role`, { method:'PATCH', body:JSON.stringify({role:newRole}) });
+  });
+}
+
+// ─── OFFERS ───────────────────────────────────────────────
+let offersPage=1, offersStatus='';
+async function renderOffers(el, page) {
+  offersPage = page||1;
+  try {
+    let qs = `?page=${offersPage}&limit=20`;
+    if (offersStatus) qs += `&status=${offersStatus}`;
+    const d = await api('/offers' + qs);
+
+    el.innerHTML = `
+      <div class="flex gap-3 mb-5">
+        <select class="input max-w-[180px]" onchange="offersStatus=this.value;offersPage=1;renderOffers(document.getElementById('page-content'))">
+          <option value="">Все статусы</option>
+          <option value="sent" ${offersStatus==='sent'?'selected':''}>Отправлен</option>
+          <option value="viewed" ${offersStatus==='viewed'?'selected':''}>Просмотрен</option>
+          <option value="accepted" ${offersStatus==='accepted'?'selected':''}>Принят</option>
+          <option value="rejected" ${offersStatus==='rejected'?'selected':''}>Отклонён</option>
+        </select>
+      </div>
+      <div class="glass overflow-x-auto">
+        <table>
+          <thead><tr><th>Исполнитель</th><th>Задача</th><th>Цена</th><th>Срок</th><th>Статус</th><th>Сообщение</th><th>Дата</th></tr></thead>
+          <tbody>
+            ${d.offers.map(o => `<tr>
+              <td class="font-medium">${esc(o.performer_name||'')}</td>
+              <td><a href="http://localhost:3000/#/tasks/${o.task_id}" target="_blank" class="text-[#FF4F00] hover:underline">${esc((o.task_title||'').slice(0,40))}</a></td>
+              <td class="text-white/70">${fmtMoney(o.price)}</td>
+              <td class="text-white/40">${esc(o.estimated_time||'—')}</td>
+              <td>${statusBadge(o.status)}</td>
+              <td class="text-white/40 text-xs max-w-[200px] truncate">${esc(o.message||'')}</td>
+              <td class="text-white/30 text-xs">${fmtDate(o.created_at)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${pagination(d.page, d.totalPages, p => `renderOffers(document.getElementById('page-content'),${p})`)}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+// ─── REPORTS ──────────────────────────────────────────────
+async function renderReports(el) {
+  try {
+    const d = await api('/reports');
+    const openReports = d.reports.filter(r => r.status !== 'closed');
+    const closedReports = d.reports.filter(r => r.status === 'closed');
+
+    el.innerHTML = `
+      <div class="flex gap-3 mb-5">
+        <button onclick="showReportTab('open')" id="tab-open" class="btn btn-orange">Открытые (${openReports.length})</button>
+        <button onclick="showReportTab('closed')" id="tab-closed" class="btn btn-ghost">Закрытые (${closedReports.length})</button>
+      </div>
+
+      <div id="reports-open" class="space-y-4">
+        ${openReports.length === 0 ? '<div class="glass p-10 text-center"><i class="ti ti-check text-green-400 text-4xl mb-3 block"></i><p class="text-white/40">Нет открытых жалоб — всё чисто</p></div>' : openReports.map(r => reportWorkflowCard(r)).join('')}
+      </div>
+
+      <div id="reports-closed" class="space-y-3 hidden">
+        ${closedReports.map(r => `
+          <div class="glass p-4 border-l-4 border-green-500/50 opacity-60">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="badge badge-green">Закрыта</span>
+              <span class="text-xs text-white/30">${r.target_type} #${r.target_id}</span>
+              <span class="text-xs text-white/20 ml-auto">${fmtDate(r.created_at)}</span>
+            </div>
+            <p class="text-sm">${esc(r.reason)}</p>
+            <p class="text-xs text-white/40 mt-1">${esc(r.comment||'')} — от ${esc(r.reporter_name||'Аноним')}</p>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+function showReportTab(tab) {
+  document.getElementById('reports-open').classList.toggle('hidden', tab !== 'open');
+  document.getElementById('reports-closed').classList.toggle('hidden', tab !== 'closed');
+  document.getElementById('tab-open').className = `btn ${tab==='open'?'btn-orange':'btn-ghost'}`;
+  document.getElementById('tab-closed').className = `btn ${tab==='closed'?'btn-orange':'btn-ghost'}`;
+}
+
+function reportWorkflowCard(r) {
+  const isUser = r.target_type === 'user';
+  const isTask = r.target_type === 'task';
+  return `
+    <div class="glass p-5 border-l-4 border-red-500" id="report-${r.id}">
+      <!-- Report Info -->
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="badge badge-red">Жалоба #${r.id}</span>
+            <span class="badge badge-gray">${r.target_type} #${r.target_id}</span>
+            <span class="text-xs text-white/30">${fmtDate(r.created_at)}</span>
+          </div>
+          <p class="font-medium text-base">${esc(r.reason)}</p>
+          ${r.comment ? `<p class="text-sm text-white/50 mt-2 p-3 bg-white/[0.03] rounded-lg border border-white/[0.05]">${esc(r.comment)}</p>` : ''}
+          <p class="text-xs text-white/40 mt-2"><i class="ti ti-user mr-1"></i>От: <strong>${esc(r.reporter_name||'Аноним')}</strong></p>
+        </div>
+      </div>
+
+      <!-- Target Info -->
+      <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05] mb-4">
+        <p class="text-xs text-white/40 mb-2 uppercase tracking-wider font-semibold">Объект жалобы: ${isUser?'Пользователь':isTask?'Задача':r.target_type} #${r.target_id}</p>
+        ${r.target_label ? `<p class="font-medium">${esc(r.target_label)}</p>` : ''}
+        ${isTask ? `<a href="http://localhost:3000/#/tasks/${r.target_id}" target="_blank" class="text-[#FF4F00] text-sm hover:underline">Открыть задачу ↗</a>` : ''}
+        ${isUser ? `<a href="http://localhost:3000/#/profile/${r.target_id}" target="_blank" class="text-[#FF4F00] text-sm hover:underline">Открыть профиль ↗</a>` : ''}
+      </div>
+
+      <!-- Resolution Actions -->
+      <div class="border-t border-white/[0.06] pt-4">
+        <p class="text-xs text-white/40 mb-3 uppercase tracking-wider font-semibold">Решение</p>
+        <div class="flex flex-wrap gap-2">
+          ${isUser ? `
+            <button onclick="reportAction(${r.id},'block','${r.target_id}')" class="btn btn-danger"><i class="ti ti-ban"></i>Заблокировать пользователя</button>
+            <button onclick="reportAction(${r.id},'warn','${r.target_id}')" class="btn btn-ghost"><i class="ti ti-alert-triangle"></i>Предупредить</button>
+          ` : ''}
+          ${isTask ? `
+            <button onclick="reportAction(${r.id},'hide_task','${r.target_id}')" class="btn btn-danger"><i class="ti ti-eye-off"></i>Скрыть задачу</button>
+            <button onclick="reportAction(${r.id},'cancel_task','${r.target_id}')" class="btn btn-danger"><i class="ti ti-x"></i>Отменить задачу</button>
+          ` : ''}
+          <button onclick="reportAction(${r.id},'dismiss','')" class="btn btn-ghost"><i class="ti ti-x"></i>Отклонить жалобу</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function reportAction(reportId, action, targetId) {
+  const labels = {
+    block: 'заблокировать пользователя',
+    warn: 'отправить предупреждение',
+    hide_task: 'скрыть задачу',
+    cancel_task: 'отменить задачу',
+    dismiss: 'отклонить жалобу'
+  };
+  if (!confirm(`Вы уверены: ${labels[action]}?`)) return;
+
+  try {
+    // Execute the action
+    if (action === 'block' && targetId) {
+      await api(`/users/${targetId}/block`, { method: 'PATCH', body: JSON.stringify({ blocked: 1 }) });
+    } else if (action === 'hide_task' && targetId) {
+      await api(`/tasks/${targetId}/hide`, { method: 'PATCH', body: JSON.stringify({ hidden: 1 }) });
+    } else if (action === 'cancel_task' && targetId) {
+      await api(`/tasks/${targetId}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) });
+    } else if (action === 'warn' && targetId) {
+      await api('/notifications/broadcast', { method: 'POST', body: JSON.stringify({ message: 'Вам выдано предупреждение от модерации. Повторные нарушения приведут к блокировке.', target: 'user', userId: parseInt(targetId) }) });
+    }
+    // Close the report
+    await api(`/reports/${reportId}/resolve`, { method: 'PATCH' });
+    toast('Жалоба обработана', 'success');
+    // Refresh
+    route();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+  }
+}
+
+// ─── REVIEWS ──────────────────────────────────────────────
+let reviewsPage=1;
+async function renderReviews(el, page) {
+  reviewsPage = page||1;
+  try {
+    const d = await api(`/reviews?page=${reviewsPage}&limit=20`);
+    el.innerHTML = `
+      <div class="glass overflow-x-auto">
+        <table>
+          <thead><tr><th>Автор</th><th>Кому</th><th>Задача</th><th>Оценка</th><th>Комментарий</th><th>Дата</th><th>Действия</th></tr></thead>
+          <tbody>
+            ${d.reviews.map(r => `<tr class="${r.hidden?'opacity-40':''}">
+              <td class="font-medium">${esc(r.reviewer_name||'')}</td>
+              <td class="text-white/50">${esc(r.reviewee_name||'')}</td>
+              <td class="text-white/40 text-xs">${esc((r.task_title||'').slice(0,30))}</td>
+              <td class="text-yellow-400">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</td>
+              <td class="text-white/40 text-xs max-w-[200px] truncate">${esc(r.comment||'')}</td>
+              <td class="text-white/30 text-xs">${fmtDate(r.created_at)}</td>
+              <td><button onclick="toggleReview(${r.id},${r.hidden?0:1})" class="btn ${r.hidden?'btn-success':'btn-ghost'} btn-sm">${r.hidden?'Показать':'Скрыть'}</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${pagination(d.page, d.totalPages, p => `renderReviews(document.getElementById('page-content'),${p})`)}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+async function toggleReview(id, hide) {
+  try { await api(`/reviews/${id}/hidden`, { method:'PATCH', body:JSON.stringify({hidden:hide}) }); toast(hide?'Отзыв скрыт':'Отзыв показан','success'); route(); } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── CHATS ────────────────────────────────────────────────
+async function renderChats(el) {
+  try {
+    const d = await api('/chats');
+    el.innerHTML = `
+      <div class="glass p-2">
+        <p class="text-xs text-white/30 mb-3 px-3 py-2"><i class="ti ti-info-circle mr-1"></i>Метаданные чатов. Содержимое переписки не доступно администратору.</p>
+        <div class="space-y-1">
+          ${(d.chats||d).map(c => `
+            <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/[0.03] transition-colors">
+              <div class="w-10 h-10 rounded-xl bg-[#BF00FF]/10 border border-[#BF00FF]/20 flex items-center justify-center flex-shrink-0">
+                <i class="ti ti-messages text-[#BF00FF]"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-sm truncate">${esc(c.task_title||'Задача #'+c.task_id)}</p>
+                <p class="text-xs text-white/40">${esc(c.client_name||'')} ↔ ${esc(c.performer_name||'')}</p>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <div class="text-sm font-bold">${c.message_count||0} сообщ.</div>
+                <div class="text-xs text-white/25">${fmtDate(c.last_message_at||c.created_at)}</div>
+              </div>
+            </div>
+          `).join('') || '<p class="text-white/30 p-4">Нет чатов</p>'}
+        </div>
+      </div>
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+async function renderChatDetail(el, taskId) {
+  try {
+    const d = await api(`/chats/${taskId}`);
+    el.innerHTML = `<a href="#chats" class="btn btn-ghost btn-sm mb-4">← Назад к чатам</a><div class="glass p-4"><p class="text-white/40 text-sm">Просмотр содержимого чата недоступен.</p></div>`;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────
+async function renderNotifications(el) {
+  el.innerHTML = `
+    <div class="grid lg:grid-cols-2 gap-6">
+      <div class="glass p-6">
+        <h3 class="font-jakarta font-bold mb-4 flex items-center gap-2"><i class="ti ti-send text-[#FF4F00]"></i>Отправить рассылку</h3>
+        <div class="space-y-4">
+          <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Сообщение</label>
+            <textarea id="broadcast-msg" class="input" rows="3" placeholder="Текст уведомления..."></textarea></div>
+          <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Получатель</label>
+            <select id="broadcast-target" class="input"><option value="all">Всем пользователям</option><option value="clients">Только заказчикам</option><option value="performers">Только исполнителям</option></select></div>
+          <button onclick="sendBroadcast()" class="btn btn-orange w-full"><i class="ti ti-send"></i>Отправить</button>
+        </div>
+      </div>
+      <div class="glass p-6">
+        <h3 class="font-jakarta font-bold mb-4 flex items-center gap-2"><i class="ti ti-history text-[#BF00FF]"></i>Последние рассылки</h3>
+        <div id="broadcast-history" class="space-y-2"><p class="text-white/30 text-sm">Загрузка...</p></div>
+      </div>
+    </div>
+  `;
+  try {
+    const d = await api('/notifications?page=1&limit=20');
+    const hist = document.getElementById('broadcast-history');
+    const system = (d.notifications||[]).filter(n => n.type==='system');
+    hist.innerHTML = system.length ? system.map(n => `
+      <div class="p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+        <p class="text-sm">${esc(n.payload?.message||'')}</p>
+        <p class="text-xs text-white/25 mt-1">${fmtDate(n.created_at)}</p>
+      </div>
+    `).join('') : '<p class="text-white/30 text-sm">Нет рассылок</p>';
+  } catch {}
+}
+
+async function sendBroadcast() {
+  const msg = document.getElementById('broadcast-msg').value;
+  const target = document.getElementById('broadcast-target').value;
+  if (!msg) return toast('Введите сообщение', 'error');
+  await confirmAction(`Отправить уведомление: ${target==='all'?'всем':'группе'}?`, async () => {
+    await api('/notifications/broadcast', { method:'POST', body:JSON.stringify({ message:msg, target }) });
+  });
+}
+
+// ─── ACTIONS LOG ──────────────────────────────────────────
+let actionsPage=1;
+async function renderActions(el, page) {
+  actionsPage = page||1;
+  try {
+    const d = await api(`/actions?page=${actionsPage}&limit=30`);
+    el.innerHTML = `
+      <div class="glass overflow-x-auto">
+        <table>
+          <thead><tr><th>Действие</th><th>Админ</th><th>Цель</th><th>Детали</th><th>Дата</th></tr></thead>
+          <tbody>
+            ${(d.actions||[]).map(a => `<tr>
+              <td><span class="badge badge-orange">${esc(a.action)}</span></td>
+              <td class="text-white/50">${esc(a.admin_name||'')}</td>
+              <td class="text-white/40">${esc(a.target_type||'')} ${a.target_id?'#'+a.target_id:''}</td>
+              <td class="text-white/40 text-xs max-w-[300px] truncate">${esc(a.details||'')}</td>
+              <td class="text-white/30 text-xs">${fmtDate(a.created_at||a.timestamp)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${pagination(d.page, d.totalPages, p => `renderActions(document.getElementById('page-content'),${p})`)}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+// ─── Pagination ───────────────────────────────────────────
+function pagination(current, total, onclick) {
+  if (!total || total <= 1) return '';
+  let btns = '';
+  for (let i = 1; i <= Math.min(total, 7); i++) {
+    btns += `<button onclick="${onclick.replace(')',`,${i})`)}" class="btn ${i===current?'btn-orange':'btn-ghost'} btn-sm">${i}</button>`;
+  }
+  if (total > 7) btns += `<span class="text-white/30 px-2">...${total}</span>`;
+  return `<div class="flex gap-1 mt-4 justify-center">${btns}</div>`;
+}
+
+// ─── Boot ─────────────────────────────────────────────────
+if (token && admin) showApp();
+</script>
+</body>
+</html>

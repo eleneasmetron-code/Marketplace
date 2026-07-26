@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskBridge — Маркетплейс digital-услуг</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Inter','sans-serif'], jakarta: ['"Plus Jakarta Sans"','sans-serif'] },
+    colors: { brand: '#FF4F00', magenta: '#BF00FF', page: '#0F0A0A' }
+  }}
+};
+</script>
+<style>
+  body { background: #0F0A0A; color: #fff; font-family: 'Inter', sans-serif; }
+  .orb-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.35; mix-blend-mode: screen; }
+  .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #FF4F00 0%, transparent 70%); top: -150px; right: -100px; animation: o1 30s infinite ease-in-out; }
+  .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, #BF00FF 0%, transparent 70%); bottom: -200px; left: -100px; animation: o2 35s infinite ease-in-out; }
+  @keyframes o1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,40px)} }
+  @keyframes o2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
+
+  .glass { background: rgba(255,255,255,0.035); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); border-radius: 1.25rem; }
+  .glass-strong { background: rgba(255,255,255,0.06); backdrop-filter: blur(50px); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.25rem; }
+  .nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 10px; color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 500; text-decoration: none; transition: all 0.2s; cursor: pointer; }
+  .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .nav-link.active { color: #fff; background: rgba(255,79,0,0.15); border-left: 3px solid #FF4F00; }
+  .badge { display: inline-flex; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+  .badge-orange { background: rgba(255,79,0,0.15); color: #FF4F00; }
+  .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .badge-red { background: rgba(239,68,68,0.15); color: #f87171; }
+  .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .badge-purple { background: rgba(168,85,247,0.15); color: #c084fc; }
+  .badge-yellow { background: rgba(234,179,8,0.15); color: #facc15; }
+  .badge-gray { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 16px; border-radius: 10px; font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s; border: none; }
+  .btn-orange { background: #FF4F00; color: #fff; } .btn-orange:hover { background: #e04500; }
+  .btn-ghost { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.08); } .btn-ghost:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .btn-danger { background: rgba(239,68,68,0.15); color: #f87171; } .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-success { background: rgba(34,197,94,0.15); color: #4ade80; } .btn-success:hover { background: rgba(34,197,94,0.25); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
+
+  .input { width: 100%; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; font-size: 13px; background: rgba(255,255,255,0.03); color: #fff; outline: none; }
+  .input:focus { border-color: #FF4F00; box-shadow: 0 0 0 2px rgba(255,79,0,0.15); }
+  .input::placeholder { color: rgba(255,255,255,0.25); }
+  textarea.input { resize: vertical; min-height: 80px; }
+  select.input { appearance: auto; } select.input option { background: #0F0A0A; }
+
+  .card-hover { transition: all 0.2s; } .card-hover:hover { border-color: rgba(255,79,0,0.3); transform: translateY(-1px); }
+  .toast { position: fixed; bottom: 24px; right: 24px; z-index: 200; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 500; animation: toastIn 0.3s ease; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+  /* Role-based visibility — default: both hidden (guest) */
+  .nav-client-only { display: none !important; }
+  .nav-performer-only { display: none !important; }
+  body[data-user-role="client"] .nav-client-only { display: flex !important; }
+  body[data-user-role="performer"] .nav-performer-only { display: flex !important; }
+  body[data-user-role="admin"] .nav-client-only,
+  body[data-user-role="admin"] .nav-performer-only { display: flex !important; }
+
+  @media (max-width: 768px) { .sidebar-open #sidebar { transform: translateX(0); } }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+<div class="orb-bg"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+
+<!-- Login Modal -->
+<div id="login-modal" class="modal-overlay hidden z-[200]" onclick="if(event.target===this) closeLoginModal()">
+  <div class="glass p-8 w-full max-w-md text-center" onclick="event.stopPropagation()">
+    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-12 shadow-xl shadow-white/10">
+      <i class="ti ti-bridge text-[#0F0A0A] text-2xl"></i>
+    </div>
+    <h2 class="font-jakarta text-xl font-extrabold mb-1">TaskBridge</h2>
+    <p class="text-white/40 text-sm mb-4">Войдите или создайте аккаунт</p>
+    <div class="flex gap-2 justify-center mb-4">
+      <button onclick="showLoginForm()" id="login-tab-btn" class="btn btn-orange">Вход</button>
+      <button onclick="showRegisterForm()" id="register-tab-btn" class="btn btn-ghost">Регистрация</button>
+    </div>
+
+    <form id="login-form" onsubmit="handleLogin(event)" class="space-y-3 text-left">
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Email</label>
+        <input type="email" id="login-email" class="input" value="" required></div>
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Пароль</label>
+        <input type="password" id="login-pass" class="input" required></div>
+      <div id="login-error" class="text-red-400 text-sm hidden"></div>
+      <button type="submit" class="btn btn-orange w-full py-2.5 text-sm">Войти</button>
+      <p class="text-center text-xs text-white/40 mt-2">Нет аккаунта? <button type="button" onclick="showRegisterForm()" class="text-brand hover:underline">Зарегистрироваться</button></p>
+    </form>
+
+    <form id="register-form" onsubmit="handleRegister(event)" class="space-y-3 text-left hidden">
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Имя</label>
+        <input type="text" id="reg-name" class="input" required></div>
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Email</label>
+        <input type="email" id="reg-email" class="input" required></div>
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Пароль</label>
+        <input type="password" id="reg-pass" class="input" minlength="6" required></div>
+      <div><label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Я</label>
+        <select id="reg-role" class="input">
+          <option value="client">Заказчик</option>
+          <option value="performer">Исполнитель</option>
+        </select></div>
+      <div id="reg-error" class="text-red-400 text-sm hidden"></div>
+      <button type="submit" class="btn btn-orange w-full py-2.5 text-sm">Создать аккаунт</button>
+      <p class="text-center text-xs text-white/40 mt-2">Уже есть аккаунт? <button type="button" onclick="showLoginForm()" class="text-brand hover:underline">Войти</button></p>
+    </form>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app-shell" class="relative z-10 flex flex-col flex-1 min-h-0">
+  <!-- Top Nav -->
+  <header class="sticky top-0 z-50 bg-[#0F0A0A]/80 backdrop-blur-xl border-b border-white/[0.06] px-4 lg:px-6 py-3 flex items-center gap-4 flex-none shrink-0">
+    <button onclick="toggleSidebar()" class="btn btn-ghost btn-sm lg:hidden"><i class="ti ti-menu-2 text-lg"></i></button>
+    <div class="flex items-center gap-3 flex-shrink-0">
+      <a href="#/" class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-white rounded-xl flex items-center justify-center rotate-12 shadow-lg shadow-white/10">
+          <i class="ti ti-bridge text-[#0F0A0A] text-sm"></i>
+        </div>
+        <span class="font-jakarta font-extrabold text-sm tracking-tight hidden sm:inline">TaskBridge</span>
+      </a>
+    </div>
+
+    <nav class="hidden lg:flex items-center gap-1 flex-1 ml-4 overflow-x-auto" id="desktop-nav">
+      <a href="#/" class="nav-link" data-page="home"><i class="ti ti-home"></i>Главная</a>
+      <a href="#/tasks" class="nav-link" data-page="catalog"><i class="ti ti-search"></i>Задачи</a>
+      <a href="#/performers" class="nav-link" data-page="performers"><i class="ti ti-users"></i>Исполнители</a>
+      <a href="#/my-tasks" class="nav-link nav-client-only" data-page="my-tasks"><i class="ti ti-list-check"></i>Мои задачи</a>
+      <a href="#/my-offers" class="nav-link nav-performer-only" data-page="my-offers"><i class="ti ti-file-certificate"></i>Мои отклики</a>
+      <a href="#/create" class="nav-link nav-client-only" data-page="create"><i class="ti ti-plus-circle"></i>Создать</a>
+    </nav>
+
+    <div class="flex items-center gap-2 ml-auto flex-shrink-0">
+      <button onclick="navigate('/notifications')" class="btn btn-ghost btn-sm relative" title="Уведомления" id="notif-btn">
+        <i class="ti ti-bell text-lg"></i>
+        <span id="notif-badge" class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center hidden"></span>
+      </button>
+      <div id="guest-nav" class="flex items-center gap-2">
+        <button onclick="showLoginModal()" class="btn btn-ghost btn-sm"><i class="ti ti-login"></i>Войти</button>
+        <button onclick="showRegisterModal()" class="btn btn-orange btn-sm">Регистрация</button>
+      </div>
+      <div id="user-nav" class="relative hidden">
+        <button onclick="toggleUserMenu()" class="flex items-center gap-2 btn btn-ghost btn-sm">
+          <img id="user-avatar" src="" class="w-6 h-6 rounded-full">
+          <span id="user-name-nav" class="text-sm max-w-[100px] truncate hidden sm:inline"></span>
+          <i class="ti ti-chevron-down text-xs"></i>
+        </button>
+        <div id="user-menu" class="absolute right-0 top-full mt-1 glass-strong p-2 min-w-[200px] hidden">
+          <a href="#/profile" class="nav-link" onclick="closeUserMenu()"><i class="ti ti-user"></i>Профиль</a>
+          <a href="#/settings" class="nav-link" onclick="closeUserMenu()"><i class="ti ti-settings"></i>Настройки</a>
+          <hr class="border-white/[0.06] my-1">
+          <button onclick="logout()" class="nav-link w-full text-left"><i class="ti ti-logout"></i>Выйти</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Bottom Nav (mobile) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-50 bg-[#0F0A0A]/90 backdrop-blur-xl border-t border-white/[0.06] flex lg:hidden justify-around py-2 px-2" id="mobile-nav">
+    <a href="#/tasks" class="nav-link flex-col gap-0.5 text-[10px] py-1 px-3" data-page="catalog"><i class="ti ti-search text-lg"></i><span>Задачи</span></a>
+    <a href="#/performers" class="nav-link flex-col gap-0.5 text-[10px] py-1 px-3" data-page="performers"><i class="ti ti-users text-lg"></i><span>Люди</span></a>
+    <a href="#/my-tasks" class="nav-link nav-client-only flex-col gap-0.5 text-[10px] py-1 px-3" data-page="my-tasks"><i class="ti ti-list-check text-lg"></i><span>Мои задачи</span></a>
+    <a href="#/my-offers" class="nav-link nav-performer-only flex-col gap-0.5 text-[10px] py-1 px-3" data-page="my-offers"><i class="ti ti-file-certificate text-lg"></i><span>Отклики</span></a>
+    <a href="#/create" class="nav-link nav-client-only flex-col gap-0.5 text-[10px] py-1 px-3" data-page="create"><i class="ti ti-plus-circle text-lg"></i><span>Создать</span></a>
+    <a href="#/profile" class="nav-link flex-col gap-0.5 text-[10px] py-1 px-3" data-page="profile"><i class="ti ti-user text-lg"></i><span>Профиль</span></a>
+  </nav>
+
+  <!-- Content -->
+  <main id="page-content" class="p-4 lg:p-6 pb-20 lg:pb-6 max-w-6xl mx-auto flex-1 w-full"></main>
+
+  <footer id="global-footer" class="border-t border-white/[0.06] py-2 px-4 flex-none shrink-0 mt-auto">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-white/30">
+      <div class="flex items-center gap-2">
+        <div class="w-5 h-5 bg-white rounded-lg flex items-center justify-center rotate-12">
+          <i class="ti ti-bridge text-[#0F0A0A] text-xs"></i>
+        </div>
+        <span class="font-jakarta font-bold">TaskBridge</span>
+        <span>© 2026</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="#/about" class="hover:text-white transition-colors">О нас</a>
+        <a href="#/help" class="hover:text-white transition-colors">Помощь</a>
+        <a href="#/terms" class="hover:text-white transition-colors">Условия</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('tb_token');
+let user = JSON.parse(localStorage.getItem('tb_user') || 'null');
+let currentPage = 'catalog';
+
+// ─── Auth ─────────────────────────────────────────────────
+function showLoginModal() { closeLoginFormErrors(); showLoginForm(); document.getElementById('login-modal').classList.remove('hidden'); }
+function showRegisterModal() { closeLoginFormErrors(); showRegisterForm(); document.getElementById('login-modal').classList.remove('hidden'); }
+function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); }
+function requireAuth() { if (!token) { showLoginModal(); return false; } return true; }
+function closeLoginFormErrors() {
+  document.getElementById('login-error').classList.add('hidden');
+  document.getElementById('reg-error').classList.add('hidden');
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    const r = await fetch(API + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Ошибка входа');
+    token = d.token; user = d.user;
+    localStorage.setItem('tb_token', token);
+    localStorage.setItem('tb_user', JSON.stringify(user));
+    closeLoginModal();
+    updateNav();
+    route();
+  } catch(err) {
+    const el = document.getElementById('login-error');
+    el.textContent = err.message; el.classList.remove('hidden');
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const name = document.getElementById('reg-name').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-pass').value;
+  const role = document.getElementById('reg-role').value;
+  try {
+    const r = await fetch(API + '/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Ошибка регистрации');
+    token = d.token; user = d.user;
+    localStorage.setItem('tb_token', token);
+    localStorage.setItem('tb_user', JSON.stringify(user));
+    closeLoginModal();
+    updateNav();
+    route();
+  } catch(err) {
+    const el = document.getElementById('reg-error');
+    el.textContent = err.message; el.classList.remove('hidden');
+  }
+}
+
+function showLoginForm() {
+  document.getElementById('login-form').classList.remove('hidden');
+  document.getElementById('register-form').classList.add('hidden');
+  document.getElementById('login-tab-btn').className = 'btn btn-orange';
+  document.getElementById('register-tab-btn').className = 'btn btn-ghost';
+}
+
+function showRegisterForm() {
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('register-form').classList.remove('hidden');
+  document.getElementById('login-tab-btn').className = 'btn btn-ghost';
+  document.getElementById('register-tab-btn').className = 'btn btn-orange';
+}
+
+function showRegisterWithRole(role) {
+  showRegisterModal();
+  const sel = document.getElementById('reg-role');
+  if (sel) sel.value = role;
+}
+
+function showRegisterWithRole(role) {
+  showRegisterModal();
+  const sel = document.getElementById('reg-role');
+  if (sel) sel.value = role;
+}
+
+function updateNav() {
+  const guest = document.getElementById('guest-nav');
+  const userNav = document.getElementById('user-nav');
+  const notifBtn = document.getElementById('notif-btn');
+  const clientOnly = document.querySelectorAll('.nav-client-only');
+  const performerOnly = document.querySelectorAll('.nav-performer-only');
+  if (token && user) {
+    guest.classList.add('hidden');
+    userNav.classList.remove('hidden');
+    notifBtn.classList.remove('hidden');
+    document.getElementById('user-name-nav').textContent = user.name;
+    const av = document.getElementById('user-avatar');
+    av.src = user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}&backgroundColor=FF4F00`;
+    // Set user role on body for CSS
+    document.body.setAttribute('data-user-role', user.role || 'client');
+    clientOnly.forEach(el => el.classList.toggle('hidden', user.role !== 'client'));
+    performerOnly.forEach(el => el.classList.toggle('hidden', user.role !== 'performer'));
+  } else {
+    guest.classList.remove('hidden');
+    userNav.classList.add('hidden');
+    notifBtn.classList.add('hidden');
+    document.body.removeAttribute('data-user-role');
+    clientOnly.forEach(el => el.classList.add('hidden'));
+    performerOnly.forEach(el => el.classList.add('hidden'));
+  }
+}
+
+function logout() {
+  token = null; user = null;
+  localStorage.removeItem('tb_token');
+  localStorage.removeItem('tb_user');
+  closeUserMenu();
+  updateNav();
+  route();
+}
+
+function showApp() {
+  updateNav();
+  route();
+}
+
+function toggleUserMenu() {
+  document.getElementById('user-menu').classList.toggle('hidden');
+}
+
+function closeUserMenu() {
+  document.getElementById('user-menu').classList.add('hidden');
+}
+
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-open');
+}
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  if (opts.body && typeof opts.body === 'string') { /* keep */ }
+  const r = await fetch(API + path, { ...opts, headers });
+  if (r.status === 401) {
+    if (token) { logout(); throw new Error('Сессия истекла'); }
+    throw new Error('Требуется авторизация');
+  }
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Ошибка сервера');
+  return d;
+}
+
+// ─── Routing ──────────────────────────────────────────────
+function navigate(hash) {
+  location.hash = hash;
+}
+
+function route() {
+  const hash = location.hash.replace(/^#\/?/, '');
+  const parts = hash.split('/');
+  const page = parts[0] || 'home';
+  currentPage = page;
+
+  document.querySelectorAll('.nav-link').forEach(l => {
+    const dp = l.dataset.page;
+    l.classList.toggle('active', dp === page || (dp === 'catalog' && ['catalog','tasks'].includes(page)) || (dp === 'my-tasks' && page === 'my-tasks'));
+  });
+
+  const pc = document.getElementById('page-content');
+  pc.innerHTML = '<div class="space-y-4">' + Array(3).fill('<div class="skeleton" style="height:40px"></div>').join('') + '</div>';
+  pc.className = 'p-4 lg:p-6 pb-20 lg:pb-6 max-w-6xl mx-auto fade-in';
+  pc.style.minHeight = '';
+
+  document.body.style.overflow = (page === 'home') ? 'hidden' : 'auto';
+  document.body.style.display = '';
+  document.body.style.flexDirection = '';
+  document.body.style.height = '';
+
+  function authGuard() {
+    if (!token) {
+      pc.innerHTML = `<div class="glass p-12 text-center">
+        <i class="ti ti-lock text-5xl text-white/20 block mb-4"></i>
+        <p class="text-white/40 mb-3">Требуется авторизация</p>
+        <button onclick="showLoginModal()" class="btn btn-orange">Войти</button>
+      </div>`;
+      return false;
+    }
+    return true;
+  }
+
+  const handlers = {
+    'home': renderCatalog,
+    'catalog': renderTasks,
+    'performers': renderPerformers,
+    'tasks': () => parts[1] ? renderTaskDetail(pc, parts[1]) : renderTasks(),
+    'my-tasks': () => {
+      if (!authGuard()) return;
+      if (user?.role === 'performer') {
+        pc.innerHTML = `<div class="glass p-12 text-center">
+          <i class="ti ti-lock text-5xl text-white/20 block mb-4"></i>
+          <p class="text-white/40">Эта страница доступна только заказчикам</p>
+        </div>`;
+        return;
+      }
+      renderMyTasks(pc);
+    },
+    'my-offers': () => {
+      if (!authGuard()) return;
+      if (user?.role === 'client') {
+        pc.innerHTML = `<div class="glass p-12 text-center">
+          <i class="ti ti-lock text-5xl text-white/20 block mb-4"></i>
+          <p class="text-white/40">Эта страница доступна только исполнителям</p>
+        </div>`;
+        return;
+      }
+      renderMyOffers(pc);
+    },
+    'create': () => authGuard() && renderCreateTask(pc),
+    'profile': () => parts[1] ? renderUserProfile(pc, parts[1]) : (authGuard() && renderMyProfile(pc)),
+    'notifications': () => authGuard() && renderNotifications(pc),
+    'settings': () => authGuard() && renderSettings(pc)
+  };
+
+  updateNotifBadge();
+  if (handlers[page]) handlers[page]();
+  else pc.innerHTML = '<div class="glass p-10 text-center"><p class="text-white/40">Страница не найдена</p></div>';
+}
+
+window.addEventListener('hashchange', () => { closeUserMenu(); route(); });
+
+async function updateNotifBadge() {
+  try {
+    if (!token) return;
+    const d = await api('/notifications/unseen-count');
+    const b = document.getElementById('notif-badge');
+    if (d.count > 0) { b.textContent = d.count > 9 ? '9+' : d.count; b.classList.remove('hidden'); }
+    else b.classList.add('hidden');
+  } catch {}
+}
+
+// ─── Helpers ──────────────────────────────────────────────
+function esc(s) { if (s==null) return ''; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtMoney(n) { return n ? Number(n).toLocaleString('ru-RU') + ' ₽' : 'Договорная'; }
+function toast(msg, type='info') {
+  const colors = { info: 'bg-blue-600', success: 'bg-green-600', error: 'bg-red-600', warning: 'bg-yellow-600' };
+  const el = document.createElement('div');
+  el.className = `toast ${colors[type]||colors.info} text-white`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+const STATUS_LABELS = { draft:'Черновик', published:'Открыта', moderation:'Модерация', hidden:'Скрыта', assigned:'Исполнитель выбран', in_progress:'В работе', review:'На проверке', completed:'Завершена', cancelled:'Отменена', disputed:'Спорная', archived:'Архив' };
+const STATUS_BADGE = { draft:'badge-gray', published:'badge-green', moderation:'badge-yellow', hidden:'badge-red', assigned:'badge-blue', in_progress:'badge-purple', review:'badge-yellow', completed:'badge-green', cancelled:'badge-gray', disputed:'badge-red', archived:'badge-gray' };
+const ROLE_LABELS = { client:'Заказчик', performer:'Исполнитель', admin:'Админ' };
+const ROLE_BADGE = { client:'badge-blue', performer:'badge-purple', admin:'badge-orange' };
+const CAT_LABELS = { sites:'Сайты', design:'Дизайн', ads:'Реклама', bots:'Боты', automation:'Автоматизация', texts:'Тексты', presentations:'Презентации', analytics:'Аналитика', other:'Другое' };
+const URGENCY_LABELS = { low:'Низкая', normal:'Средняя', high:'Высокая', urgent:'Срочно' };
+const BUDGET_TYPE_LABELS = { fixed:'Фиксированная', negotiable:'Договорная', hourly:'Почасовая' };
+
+function statusBadge(s) { return `<span class="badge ${STATUS_BADGE[s]||'badge-gray'}">${STATUS_LABELS[s]||s}</span>`; }
+function roleBadge(r) { return `<span class="badge ${ROLE_BADGE[r]||'badge-gray'}">${ROLE_LABELS[r]||r}</span>`; }
+function availabilityLabel(v) { return v === 'busy' ? 'Занят' : v === 'partial' ? 'Частично занят' : 'Свободен'; }
+function availabilityClass(v) { return v === 'busy' ? 'badge-red' : v === 'partial' ? 'badge-yellow' : 'badge-green'; }
+function statTile(label, value, icon='ti-chart-bar') {
+  return `<div class="p-4 bg-white/[0.035] border border-white/[0.06] rounded-xl">
+    <div class="flex items-center gap-2 text-white/35 text-xs uppercase tracking-wider mb-2"><i class="ti ${icon}"></i>${label}</div>
+    <div class="font-jakarta text-2xl font-extrabold text-white">${value ?? 0}</div>
+  </div>`;
+}
+function skeleton(rows) { return '<div class="space-y-3">'+Array(rows||3).fill('<div class="skeleton" style="height:24px;border-radius:8px"></div>').join('')+'</div>'; }
+
+const CAT_ICONS = { sites:'ti-code', design:'ti-palette', ads:'ti-ad', bots:'ti-robot', automation:'ti-settings', texts:'ti-file-text', presentations:'ti-presentation', analytics:'ti-chart-bar', other:'ti-dots' };
+
+// ─── LANDING ──────────────────────────────────────────────
+function renderCatalog() {
+  const pc = document.getElementById('page-content');
+  pc.className = 'fade-in flex flex-col items-center justify-center px-4 py-4 flex-1 w-full';
+  pc.style.minHeight = '';
+  pc.innerHTML = `
+    <div class="w-full">
+      <div class="max-w-5xl w-full mx-auto">
+        <div class="glass rounded-3xl p-1">
+          <div class="bg-white/[0.01] rounded-[1.4rem] px-6 py-6 md:px-12 md:py-8 text-center overflow-hidden relative" style="background:rgba(255,255,255,0.02);backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.08)">
+            <span class="inline-block px-4 py-1.5 bg-white/5 backdrop-blur-md border border-white/20 rounded-full text-[9px] font-black text-white uppercase tracking-[0.2em] mb-4">
+              Freelance Future 2.0
+            </span>
+            
+            <h1 class="font-jakarta text-3xl md:text-5xl text-white mb-6 tracking-tight font-extrabold leading-[1.05]">
+              Найди идеального исполнителя
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-4">
+              <a href="javascript:void(0)" onclick="showRegisterWithRole('client')" class="rounded-2xl p-5 flex flex-col items-center group cursor-pointer transition-all duration-500 hover:-translate-y-2" style="background:rgba(255,255,255,0.035);backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.1)" onmouseover="this.style.boxShadow='0 20px 50px -10px rgba(255,79,0,0.3)';this.style.borderColor='rgba(255,79,0,0.6)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='rgba(255,255,255,0.1)'">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6" style="background:rgba(255,79,0,0.15);border:1px solid rgba(255,79,0,0.2)">
+                  <i class="ti ti-briefcase text-3xl text-brand"></i>
+                </div>
+                <h2 class="font-jakarta text-xl md:text-2xl text-white mb-2 font-bold">Я заказчик</h2>
+                <p class="text-white/60 text-xs leading-relaxed max-w-[220px]">
+                  Найди профессионала для своего проекта
+                </p>
+                <div class="mt-4 flex items-center justify-center w-10 h-10 rounded-full border-2 border-white/10 text-white transition-all duration-300 group-hover:bg-brand group-hover:border-brand group-hover:shadow-[0_0_20px_rgba(255,79,0,0.5)]">
+                  <i class="ti ti-arrow-right text-xl"></i>
+                </div>
+              </a>
+
+              <a href="javascript:void(0)" onclick="showRegisterWithRole('performer')" class="rounded-2xl p-5 flex flex-col items-center group cursor-pointer transition-all duration-500 hover:-translate-y-2" style="background:rgba(255,255,255,0.035);backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.1)" onmouseover="this.style.boxShadow='0 20px 50px -10px rgba(191,0,255,0.3)';this.style.borderColor='rgba(191,0,255,0.6)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='rgba(255,255,255,0.1)'">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6" style="background:rgba(191,0,255,0.15);border:1px solid rgba(191,0,255,0.2)">
+                  <i class="ti ti-rocket text-3xl text-magenta"></i>
+                </div>
+                <h2 class="font-jakarta text-xl md:text-2xl text-white mb-2 font-bold">Я исполнитель</h2>
+                <p class="text-white/60 text-xs leading-relaxed max-w-[220px]">
+                  Найди заказы и зарабатывай
+                </p>
+                <div class="mt-4 flex items-center justify-center w-10 h-10 rounded-full border-2 border-white/10 text-white transition-all duration-300 group-hover:bg-magenta group-hover:border-magenta group-hover:shadow-[0_0_20px_rgba(191,0,255,0.5)]">
+                  <i class="ti ti-arrow-right text-xl"></i>
+                </div>
+              </a>
+            </div>
+
+            <p class="text-white/30 text-xs">Более 1000 успешных проектов</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── TASKS CATALOG ────────────────────────────────────────
+let catPage=1, catSort='newest', catFilter='', catCategory='', catUrgency='';
+let perfSkill='', perfAvailability='', perfRating='';
+
+async function renderPerformers() {
+  const pc = document.getElementById('page-content');
+  pc.className = 'p-4 lg:p-6 pb-20 lg:pb-6 max-w-6xl mx-auto flex-1 w-full fade-in';
+  pc.style.minHeight = '';
+  try {
+    const qs = new URLSearchParams({ limit: '24' });
+    if (perfSkill) qs.set('skill', perfSkill);
+    if (perfAvailability) qs.set('availability', perfAvailability);
+    if (perfRating) qs.set('min_rating', perfRating);
+    const d = await api('/users/performers/list?' + qs.toString());
+    const performers = d.performers || [];
+
+    pc.innerHTML = `
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 class="font-jakarta text-2xl font-extrabold tracking-tight">Исполнители</h1>
+          <p class="text-sm text-white/40 mt-1">Каталог специалистов: рейтинг, ставка, навыки, доступность и профиль для сравнения.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <input class="input max-w-[210px] text-xs" placeholder="Навык: дизайн, bots..." value="${esc(perfSkill)}" oninput="perfSkill=this.value;clearTimeout(catTimer);catTimer=setTimeout(renderPerformers,350)">
+          <select class="input max-w-[150px] text-xs" onchange="perfAvailability=this.value;renderPerformers()">
+            <option value="">Любая занятость</option>
+            <option value="free" ${perfAvailability==='free'?'selected':''}>Свободен</option>
+            <option value="partial" ${perfAvailability==='partial'?'selected':''}>Частично</option>
+            <option value="busy" ${perfAvailability==='busy'?'selected':''}>Занят</option>
+          </select>
+          <select class="input max-w-[130px] text-xs" onchange="perfRating=this.value;renderPerformers()">
+            <option value="">Любой рейтинг</option>
+            <option value="4" ${perfRating==='4'?'selected':''}>от 4.0</option>
+            <option value="4.5" ${perfRating==='4.5'?'selected':''}>от 4.5</option>
+          </select>
+        </div>
+      </div>
+
+      ${performers.length ? `
+        <div class="grid md:grid-cols-2 gap-4">
+          ${performers.map(p => `
+            <a href="#/profile/${p.id}" class="glass p-5 block card-hover flex gap-4">
+              <img src="${p.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(p.name)}&backgroundColor=BF00FF`}" class="w-16 h-16 rounded-2xl border border-white/10 bg-white/5 shrink-0">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-jakarta font-bold truncate">${esc(p.name)}</h3>
+                  <span class="badge ${availabilityClass(p.availability)} text-[10px]">${availabilityLabel(p.availability)}</span>
+                </div>
+                <p class="text-xs text-white/40 truncate">${esc(p.specialization || 'Специализация не указана')}</p>
+                <p class="text-xs text-white/25 mt-0.5">${esc(p.city || '')}${p.country ? ', ' + esc(p.country) : ''}</p>
+                <div class="grid grid-cols-3 gap-2 mt-3">
+                  <div class="text-center"><div class="text-yellow-400 text-sm">★ ${Number(p.rating||0).toFixed(1)}</div><div class="text-[10px] text-white/30">рейтинг</div></div>
+                  <div class="text-center"><div class="text-sm font-bold">${p.completed_count||0}</div><div class="text-[10px] text-white/30">проектов</div></div>
+                  <div class="text-center"><div class="text-sm font-bold text-brand">${p.hourly_rate ? p.hourly_rate + ' ₽' : '—'}</div><div class="text-[10px] text-white/30">в час</div></div>
+                </div>
+                ${p.skills?.length ? `<div class="flex flex-wrap gap-1.5 mt-3">${p.skills.slice(0,5).map(s=>`<span class="badge badge-gray">${esc(s)}</span>`).join('')}</div>` : ''}
+              </div>
+            </a>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="glass p-12 text-center">
+          <i class="ti ti-users-off text-5xl text-white/20 block mb-4"></i>
+          <p class="text-white/40 text-lg">Исполнители не найдены</p>
+          <p class="text-white/20 text-sm mt-2">Попробуйте изменить фильтры</p>
+        </div>
+      `}
+    `;
+  } catch(e) {
+    pc.innerHTML = `<div class="glass p-10 text-center"><p class="text-red-400">Ошибка: ${esc(e.message)}</p></div>`;
+  }
+}
+
+async function renderTasks() {
+  try {
+    let qs = `?page=${catPage}&limit=12`;
+    if (catCategory) qs += `&category=${catCategory}`;
+    if (catUrgency) qs += `&urgency=${catUrgency}`;
+    if (catFilter) qs += `&search=${encodeURIComponent(catFilter)}`;
+    if (catSort==='budget_asc') qs += '&sort=budget_asc';
+    else if (catSort==='budget_desc') qs += '&sort=budget_desc';
+    else qs += '&sort=newest';
+    const d = await api('/tasks' + qs);
+
+    const pc = document.getElementById('page-content');
+    pc.className = 'p-4 lg:p-6 pb-20 lg:pb-6 max-w-6xl mx-auto flex-1 w-full fade-in';
+    pc.style.minHeight = '';
+    pc.innerHTML = `
+      <div class="flex flex-wrap items-center gap-3 mb-6">
+        <h1 class="font-jakarta text-xl font-bold flex-1">Задачи</h1>
+        <div class="flex flex-wrap gap-2">
+          <select class="input max-w-[140px] text-xs" onchange="catCategory=this.value;catPage=1;renderTasks()">
+            <option value="">Все категории</option>
+            ${Object.entries(CAT_LABELS).map(([k,v])=>`<option value="${k}" ${catCategory===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+          <select class="input max-w-[120px] text-xs" onchange="catUrgency=this.value;catPage=1;renderTasks()">
+            <option value="">Любая срочность</option>
+            ${Object.entries(URGENCY_LABELS).map(([k,v])=>`<option value="${k}" ${catUrgency===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+          <select class="input max-w-[150px] text-xs" onchange="catSort=this.value;renderTasks()">
+            <option value="newest" ${catSort==='newest'?'selected':''}>Новые</option>
+            <option value="budget_asc" ${catSort==='budget_asc'?'selected':''}>Бюджет ↑</option>
+            <option value="budget_desc" ${catSort==='budget_desc'?'selected':''}>Бюджет ↓</option>
+          </select>
+        </div>
+      </div>
+      <div class="relative mb-6">
+        <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-white/20"></i>
+        <input type="text" class="input pl-10" placeholder="Поиск задач..." value="${esc(catFilter)}" oninput="debounceTasks(this.value)">
+      </div>
+
+      ${d.tasks.length === 0 ? `
+        <div class="glass p-12 text-center">
+          <i class="ti ti-search-off text-5xl text-white/20 block mb-4"></i>
+          <p class="text-white/40 text-lg">Задачи не найдены</p>
+          <p class="text-white/20 text-sm mt-2">Попробуйте изменить параметры поиска</p>
+        </div>
+      ` : `
+        <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+          ${d.tasks.map(t => taskCard(t)).join('')}
+        </div>
+      `}
+
+      <div class="flex items-center justify-center gap-2 mt-6">
+        ${catPage > 1 ? `<button onclick="catPage--;renderTasks()" class="btn btn-ghost btn-sm"><i class="ti ti-chevron-left"></i>Назад</button>` : ''}
+        <span class="text-sm text-white/30">Стр. ${d.page || catPage}</span>
+        ${d.tasks.length === 12 ? `<button onclick="catPage++;renderTasks()" class="btn btn-ghost btn-sm">Вперед<i class="ti ti-chevron-right"></i></button>` : ''}
+      </div>
+    `;
+  } catch(e) { document.getElementById('page-content').innerHTML = `<div class="glass p-10 text-center"><p class="text-red-400">Ошибка: ${esc(e.message)}</p></div>`; }
+}
+
+let catTimer;
+function debounceTasks(v) { clearTimeout(catTimer); catTimer = setTimeout(() => { catFilter=v; catPage=1; renderTasks(); }, 400); }
+
+function taskCard(t) {
+  return `
+    <a href="#/tasks/${t.id}" class="glass p-5 block card-hover border-l-4 ${t.urgency==='urgent'?'border-red-500':t.urgency==='high'?'border-yellow-500':'border-transparent'}">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="badge badge-gray">${CAT_LABELS[t.category]||t.category}</span>
+        ${statusBadge(t.status)}
+        ${t.urgency==='urgent'?'<span class="badge badge-red">Срочно</span>':''}
+      </div>
+      <h3 class="font-jakarta font-bold text-base mb-2 line-clamp-2">${esc(t.title)}</h3>
+      <p class="text-sm text-white/40 mb-3 line-clamp-2">${esc(t.description?.slice(0,150))}</p>
+      <div class="flex items-center justify-between">
+        <span class="font-jakarta font-bold text-lg text-brand">${fmtMoney(t.budget)}</span>
+        <div class="flex items-center gap-2 text-xs text-white/30">
+          <i class="ti ti-user"></i>${esc(t.creator_name||'')}
+          <span>·</span>
+          <i class="ti ti-message"></i>${t.offer_count||0}
+        </div>
+      </div>
+    </a>
+  `;
+}
+
+// ─── MY TASKS ─────────────────────────────────────────────
+async function renderMyTasks(el) {
+  try {
+    const d = await api('/tasks/my/list');
+    const tasks = d.tasks || [];
+    const isClient = user?.role === 'client';
+    const title = isClient ? 'Мои задачи' : 'Моя работа';
+    const subtitle = isClient ? 'Задачи, которые вы опубликовали, полученные отклики и текущие статусы.' : 'Назначенные вам задачи, проверка результата и рабочие чаты.';
+    const openCount = tasks.filter(t => ['published','moderation'].includes(t.status)).length;
+    const activeCount = tasks.filter(t => ['assigned','in_progress','review'].includes(t.status)).length;
+    const completedCount = tasks.filter(t => t.status === 'completed').length;
+
+    el.innerHTML = `
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 class="font-jakarta text-2xl font-extrabold tracking-tight">${title}</h1>
+          <p class="text-sm text-white/40 mt-1">${subtitle}</p>
+        </div>
+        ${isClient ? `<a href="#/create" class="btn btn-orange"><i class="ti ti-plus-circle"></i>Создать задачу</a>` : `<a href="#/tasks" class="btn btn-orange"><i class="ti ti-search"></i>Найти задачи</a>`}
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        ${statTile('Всего', tasks.length, 'ti-list-check')}
+        ${statTile(isClient ? 'Открытые' : 'Назначены', isClient ? openCount : tasks.filter(t=>t.status==='assigned').length, 'ti-speakerphone')}
+        ${statTile('В работе', activeCount, 'ti-briefcase')}
+        ${statTile('Завершено', completedCount, 'ti-circle-check')}
+      </div>
+
+      ${tasks.length === 0 ? `
+        <div class="glass p-12 text-center">
+          <i class="ti ti-list text-5xl text-white/20 block mb-4"></i>
+          <p class="text-white/40">${isClient ? 'Вы пока не создали ни одной задачи' : 'У вас пока нет назначенной работы'}</p>
+          <a href="${isClient ? '#/create' : '#/tasks'}" class="btn btn-orange mt-4 inline-flex">${isClient ? 'Создать задачу' : 'Найти задачи'}</a>
+        </div>
+      ` : `
+        <div class="space-y-3">
+          ${tasks.map(t => `
+            <a href="#/tasks/${t.id}" class="glass p-4 flex items-center gap-4 card-hover border-l-4 ${t.status==='review'?'border-yellow-500':t.status==='completed'?'border-green-500':t.status==='in_progress'?'border-brand':'border-transparent'}">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  ${statusBadge(t.status)}
+                  <span class="badge badge-gray">${CAT_LABELS[t.category]||t.category}</span>
+                </div>
+                <h3 class="font-medium truncate">${esc(t.title)}</h3>
+                <p class="text-xs text-white/30">${fmtDate(t.created_at)} · ${t.offer_count||0} откликов</p>
+              </div>
+              <span class="font-jakarta font-bold text-brand">${fmtMoney(t.budget)}</span>
+            </a>
+          `).join('')}
+        </div>
+      `}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+// ─── MY OFFERS ─────────────────────────────────────────────
+async function renderMyOffers(el) {
+  if (user?.role !== 'performer') {
+    el.innerHTML = `
+      <div class="glass p-12 text-center max-w-2xl mx-auto">
+        <i class="ti ti-file-certificate text-5xl text-white/20 block mb-4"></i>
+        <h1 class="font-jakarta text-xl font-bold mb-2">Отклики доступны исполнителю</h1>
+        <p class="text-white/40 text-sm mb-5">Заказчик сравнивает отклики внутри своих задач. Для этого откройте задачу в разделе «Мои задачи».</p>
+        <a href="#/my-tasks" class="btn btn-orange inline-flex"><i class="ti ti-list-check"></i>Мои задачи</a>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const d = await api('/offers/my');
+    const offers = d.offers || [];
+    const accepted = offers.filter(o => o.status === 'accepted').length;
+    const active = offers.filter(o => ['sent','viewed','shortlisted'].includes(o.status)).length;
+    const rejected = offers.filter(o => o.status === 'rejected').length;
+
+    el.innerHTML = `
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 class="font-jakarta text-2xl font-extrabold tracking-tight">Мои отклики</h1>
+          <p class="text-sm text-white/40 mt-1">Коммерческие предложения, которые вы отправили заказчикам.</p>
+        </div>
+        <a href="#/tasks" class="btn btn-orange"><i class="ti ti-search"></i>Найти задачи</a>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        ${statTile('Всего', offers.length, 'ti-file-certificate')}
+        ${statTile('В ожидании', active, 'ti-clock')}
+        ${statTile('Принято', accepted, 'ti-thumb-up')}
+        ${statTile('Отклонено', rejected, 'ti-circle-x')}
+      </div>
+
+      ${offers.length === 0 ? `
+        <div class="glass p-12 text-center">
+          <i class="ti ti-file-certificate text-5xl text-white/20 block mb-4"></i>
+          <p class="text-white/40">Вы ещё не откликнулись ни на одну задачу</p>
+          <a href="#/tasks" class="btn btn-orange mt-4 inline-flex">Найти задачи</a>
+        </div>
+      ` : `
+        <div class="space-y-3">
+          ${offers.map(o => `
+            <a href="#/tasks/${o.task_id}" class="glass p-4 flex items-center gap-4 card-hover border-l-4 ${o.status==='accepted'?'border-green-500':o.status==='rejected'?'border-red-500':o.status==='shortlisted'?'border-yellow-500':'border-transparent'}">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  ${statusBadge(o.status)}
+                </div>
+                <h3 class="font-medium truncate">${esc(o.task_title||'')}</h3>
+                <p class="text-xs text-white/30">${esc(o.message?.slice(0,130))}${o.message?.length>130?'...':''}</p>
+              </div>
+              <div class="text-right">
+                <span class="font-jakarta font-bold text-brand block">${fmtMoney(o.price)}</span>
+                <span class="text-xs text-white/30">${esc(o.estimated_time||'')}</span>
+              </div>
+            </a>
+          `).join('')}
+        </div>
+      `}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">Ошибка: ${esc(e.message)}</p>`; }
+}
+
+// ─── CREATE TASK ──────────────────────────────────────────
+async function renderCreateTask(el) {
+  if (!token || user?.role !== 'client') {
+    el.innerHTML = `
+      <div class="glass p-12 text-center">
+        <i class="ti ti-lock text-5xl text-white/20 block mb-4"></i>
+        <p class="text-white/40">Только заказчики могут создавать задачи</p>
+        <p class="text-white/20 text-sm mt-2">Войдите как заказчик</p>
+      </div>
+    `;
+    return;
+  }
+
+  el.innerHTML = `
+    <h1 class="font-jakarta text-xl font-bold mb-6">Создать задачу</h1>
+    <form id="create-task-form" onsubmit="handleCreateTask(event)" class="glass p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Название *</label>
+            <input type="text" id="task-title" class="input" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Описание *</label>
+            <textarea id="task-desc" class="input" rows="4" required></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Ожидаемый результат</label>
+            <textarea id="task-result" class="input" rows="2"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Требуемые навыки</label>
+            <input type="text" id="task-skills" class="input" placeholder="Через запятую: сайты, дизайн, тексты">
+          </div>
+        </div>
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Категория *</label>
+              <select id="task-category" class="input" required>
+                <option value="">Выберите</option>
+                ${Object.entries(CAT_LABELS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Бюджет (₽)</label>
+              <input type="number" id="task-budget" class="input" min="0">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Тип бюджета</label>
+              <select id="task-budget-type" class="input">
+                <option value="fixed">Фиксированная</option>
+                <option value="negotiable">Договорная</option>
+                <option value="hourly">Почасовая</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Срочность</label>
+              <select id="task-urgency" class="input">
+                <option value="low">Низкая</option>
+                <option value="normal" selected>Средняя</option>
+                <option value="high">Высокая</option>
+                <option value="urgent">Срочно</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/50 mb-1 uppercase tracking-wider">Дедлайн</label>
+            <input type="date" id="task-deadline" class="input max-w-[200px]">
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="task-remote" checked class="w-4 h-4 accent-brand">
+            <label for="task-remote" class="text-sm text-white/60">Удалённая работа</label>
+          </div>
+        </div>
+      </div>
+      <div id="create-task-error" class="text-red-400 text-sm hidden mt-4"></div>
+      <div class="flex gap-3 pt-4 mt-4 border-t border-white/[0.06]">
+        <button type="submit" class="btn btn-orange py-2.5 px-6">Опубликовать</button>
+        <button type="button" onclick="navigate('/')" class="btn btn-ghost">Отмена</button>
+      </div>
+    </form>
+  `;
+}
+
+async function handleCreateTask(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Публикация...';
+  try {
+    const skills = document.getElementById('task-skills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    await api('/tasks', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: document.getElementById('task-title').value,
+        description: document.getElementById('task-desc').value,
+        expected_result: document.getElementById('task-result').value,
+        category: document.getElementById('task-category').value,
+        budget: parseFloat(document.getElementById('task-budget').value) || 0,
+        budget_type: document.getElementById('task-budget-type').value,
+        deadline: document.getElementById('task-deadline').value,
+        urgency: document.getElementById('task-urgency').value,
+        remote_allowed: document.getElementById('task-remote').checked ? 1 : 0,
+        required_skills: skills,
+        status: 'published'
+      })
+    });
+    toast('Задача опубликована!', 'success');
+    navigate('/my-tasks');
+  } catch(err) {
+    const el = document.getElementById('create-task-error');
+    el.textContent = err.message; el.classList.remove('hidden');
+    btn.disabled = false; btn.textContent = 'Опубликовать';
+  }
+}
+
+// ─── TASK DETAIL ──────────────────────────────────────────
+async function renderTaskDetail(el, id) {
+  try {
+    const task = await api('/tasks/' + id);
+    const isCreator = user && task.creator_id === user.id;
+    const isAssigned = user && task.assigned_to === user.id;
+    const isPerformer = user?.role === 'performer';
+    const canChat = token && (isCreator || isAssigned || user?.role === 'admin');
+    const activeStatuses = ['assigned','in_progress','review'];
+
+    el.innerHTML = `
+      <div class="mb-4">
+        <a href="#" onclick="history.back();return false" class="text-white/40 hover:text-white text-sm"><i class="ti ti-arrow-left"></i> Назад</a>
+      </div>
+
+      <div class="glass p-6 mb-4">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          ${statusBadge(task.status)}
+          <span class="badge badge-gray">${CAT_LABELS[task.category]||task.category}</span>
+          ${task.urgency==='urgent'?'<span class="badge badge-red">Срочно</span>':''}
+          ${task.remote_allowed ? '<span class="badge badge-blue">Удалённо</span>' : ''}
+        </div>
+
+        <h1 class="font-jakarta text-2xl font-bold mb-4">${esc(task.title)}</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                <p class="text-xs text-white/40 uppercase mb-1">Бюджет</p>
+                <p class="font-jakarta font-bold text-lg text-brand">${fmtMoney(task.budget)}</p>
+                <p class="text-xs text-white/30">${BUDGET_TYPE_LABELS[task.budget_type]||task.budget_type}</p>
+              </div>
+              <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                <p class="text-xs text-white/40 uppercase mb-1">Дедлайн</p>
+                <p class="font-medium">${task.deadline || '—'}</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                <p class="text-xs text-white/40 uppercase mb-1">Заказчик</p>
+                <a href="#/profile/${task.creator_id}" class="font-medium text-brand hover:underline block truncate">${esc(task.creator_name||'')}</a>
+              </div>
+              <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                <p class="text-xs text-white/40 uppercase mb-1">Создана</p>
+                <p class="font-medium text-sm">${fmtDate(task.created_at)}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-sm font-semibold text-white/50 uppercase tracking-wider mb-2">Описание</h3>
+              <p class="text-white/80 whitespace-pre-wrap">${esc(task.description)}</p>
+            </div>
+
+            ${task.required_skills?.length ? `
+              <div>
+                <h3 class="text-sm font-semibold text-white/50 uppercase tracking-wider mb-2">Навыки</h3>
+                <div class="flex flex-wrap gap-2">
+                  ${task.required_skills.map(s => `<span class="badge badge-gray">${esc(s)}</span>`).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="space-y-4">
+            ${task.expected_result ? `
+              <div class="p-4 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                <h3 class="text-sm font-semibold text-white/50 uppercase tracking-wider mb-2">Ожидаемый результат</h3>
+                <p class="text-white/70">${esc(task.expected_result)}</p>
+              </div>
+            ` : ''}
+
+            ${task.assigned_user ? `
+              <div class="p-4 bg-[#FF4F00]/10 rounded-xl border border-[#FF4F00]/20">
+                <h3 class="text-sm font-semibold text-white/50 uppercase tracking-wider mb-2">Исполнитель</h3>
+                <a href="#/profile/${task.assigned_to}" class="text-brand font-medium hover:underline">${esc(task.assigned_user.name)}</a>
+              </div>
+            ` : ''}
+
+            ${isCreator ? `<div class="p-4 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+              <h3 class="text-sm font-semibold text-white/50 uppercase tracking-wider mb-2">Действия</h3>
+              ${renderTaskActions(task)}
+            </div>` : ''}
+          </div>
+        </div>
+      </div>
+
+      ${task.status === 'completed' && !isCreator && !isAssigned ? renderReviewsBlock(task) : ''}
+      ${canChat && activeStatuses.includes(task.status) ? renderChatBlock(task) : ''}
+      ${isPerformer && !isAssigned && ['published','moderation'].includes(task.status) && !task.my_offer ? renderOfferForm(task) : ''}
+      ${(['published','moderation'].includes(task.status) && isPerformer && task.my_offer) ? '<div class="glass p-4 text-center"><p class="text-white/50"><i class="ti ti-check text-green-400"></i> Вы уже откликнулись на эту задачу</p></div>' : ''}
+      ${isCreator && ['published','moderation'].includes(task.status) ? renderOffersList(task.id) : ''}
+    `;
+  } catch(e) { el.innerHTML = `<div class="glass p-10 text-center"><p class="text-red-400">Ошибка: ${esc(e.message)}</p></div>`; }
+}
+
+function renderTaskActions(task) {
+  const btns = [];
+  if (task.status === 'published') btns.push(`<button onclick="updateStatus(${task.id},'moderation')" class="btn btn-ghost btn-sm">Отправить на модерацию</button>`);
+  if (task.status === 'moderation') btns.push(`<button onclick="updateStatus(${task.id},'published')" class="btn btn-success btn-sm">Опубликовать</button>`);
+  if (task.status === 'assigned') btns.push(`<button onclick="updateStatus(${task.id},'in_progress')" class="btn btn-orange btn-sm">Начать работу</button>`);
+  if (task.status === 'in_progress') btns.push(`<button onclick="updateStatus(${task.id},'completed')" class="btn btn-success btn-sm">Завершить</button>`);
+  if (['assigned','in_progress','review'].includes(task.status)) btns.push(`<button onclick="updateStatusToDisputed(${task.id})" class="btn btn-danger btn-sm">Открыть спор</button>`);
+
+  return btns.length ? `<div class="flex flex-wrap gap-2">${btns.join('')}</div>` : '';
+}
+
+async function updateStatus(id, status) {
+  try {
+    await api(`/tasks/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+    toast('Статус обновлён', 'success');
+    navigate('/tasks/' + id);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function updateStatusToDisputed(id) {
+  if (!confirm('Открыть спор по этой задаче?')) return;
+  await updateStatus(id, 'disputed');
+}
+
+// ─── OFFERS LIST ──────────────────────────────────────────
+async function renderOffersList(taskId) {
+  try {
+    const d = await api('/tasks/' + taskId + '/offers');
+    const offers = d.offers || [];
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <div class="glass p-5 mt-4">
+        <h3 class="font-jakarta font-bold mb-4">Отклики (${offers.length})</h3>
+        ${offers.length === 0 ? '<p class="text-white/30 text-sm">Пока нет откликов</p>' : ''}
+        <div class="space-y-3">
+          ${offers.map(o => `
+            <div class="p-4 bg-white/[0.03] rounded-xl border border-white/[0.05] ${o.status==='accepted'?'border-green-500/50':''}">
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <a href="#/profile/${o.performer_id}" class="font-medium text-brand hover:underline">${esc(o.performer_name||'')}</a>
+                  <span class="text-xs text-white/30 ml-2">${fmtDate(o.created_at)}</span>
+                </div>
+                <div class="text-right">
+                  <p class="font-jakarta font-bold text-brand">${fmtMoney(o.price)}</p>
+                  <p class="text-xs text-white/30">${esc(o.estimated_time||'')}</p>
+                </div>
+              </div>
+              <p class="text-sm text-white/50 mb-2">${esc(o.message)}</p>
+              ${o.includes ? `<p class="text-xs text-white/40"><span class="text-white/60">Включает:</span> ${esc(o.includes)}</p>` : ''}
+              ${o.status === 'sent' ? `
+                <div class="flex gap-2 mt-3 pt-3 border-t border-white/[0.06]">
+                  <button onclick="choosePerformer(${taskId},${o.id})" class="btn btn-success btn-sm">Выбрать</button>
+                  <button onclick="rejectOffer(${taskId},${o.id})" class="btn btn-danger btn-sm">Отклонить</button>
+                </div>
+              ` : o.status === 'accepted' ? '<p class="text-green-400 text-xs mt-2"><i class="ti ti-check"></i> Принят</p>' :
+              o.status === 'rejected' ? '<p class="text-red-400 text-xs mt-2">Отклонён</p>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.getElementById('page-content').appendChild(el.firstElementChild);
+  } catch {}
+}
+
+async function choosePerformer(taskId, offerId) {
+  if (!confirm('Выбрать этого исполнителя?')) return;
+  try {
+    await api(`/tasks/${taskId}/choose`, { method: 'PUT', body: JSON.stringify({ offer_id: offerId }) });
+    toast('Исполнитель выбран!', 'success');
+    navigate('/tasks/' + taskId);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function rejectOffer(taskId, offerId) {
+  if (!confirm('Отклонить этот отклик?')) return;
+  try {
+    await api(`/tasks/${taskId}/offers/reject`, { method: 'PUT', body: JSON.stringify({ offer_id: offerId }) });
+    toast('Отклик отклонён', 'success');
+    navigate('/tasks/' + taskId);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ─── OFFER FORM ───────────────────────────────────────────
+function renderOfferForm(task) {
+  return `
+    <div class="glass p-5 mt-4">
+      <h3 class="font-jakarta font-bold mb-4">Откликнуться на задачу</h3>
+      <form onsubmit="handleSendOffer(event, ${task.id})" class="space-y-4 max-w-xl" id="offer-form">
+        <div>
+          <label class="block text-xs font-semibold text-white/50 mb-1">Сообщение *</label>
+          <textarea id="offer-msg" class="input" rows="3" required placeholder="Расскажите, почему вы подходите для этой задачи"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-white/50 mb-1">Цена (₽)</label>
+            <input type="number" id="offer-price" class="input" min="0" value="${task.budget || ''}">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/50 mb-1">Срок</label>
+            <input type="text" id="offer-time" class="input" placeholder="5 дней">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-white/50 mb-1">Что входит</label>
+          <input type="text" id="offer-includes" class="input" placeholder="Разработка, дизайн, тестирование">
+        </div>
+        <div id="offer-error" class="text-red-400 text-sm hidden"></div>
+        <button type="submit" class="btn btn-orange">Отправить отклик</button>
+      </form>
+    </div>
+  `;
+}
+
+async function handleSendOffer(e, taskId) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Отправка...';
+  try {
+    await api(`/tasks/${taskId}/offers`, {
+      method: 'POST',
+      body: JSON.stringify({
+        message: document.getElementById('offer-msg').value,
+        price: parseFloat(document.getElementById('offer-price').value) || 0,
+        estimated_time: document.getElementById('offer-time').value,
+        includes: document.getElementById('offer-includes').value
+      })
+    });
+    toast('Отклик отправлен!', 'success');
+    navigate('/tasks/' + taskId);
+  } catch(err) {
+    const el = document.getElementById('offer-error');
+    el.textContent = err.message; el.classList.remove('hidden');
+    btn.disabled = false; btn.textContent = 'Отправить отклик';
+  }
+}
+
+// ─── CHAT ─────────────────────────────────────────────────
+function renderChatBlock(task) {
+  return `
+    <div class="glass p-5 mt-4">
+      <h3 class="font-jakarta font-bold mb-4">Чат</h3>
+      <div id="chat-messages" class="space-y-3 mb-4 max-h-[400px] overflow-y-auto"></div>
+      <form onsubmit="handleSendMessage(event, ${task.id})" class="flex gap-2">
+        <input type="text" id="chat-input" class="input" placeholder="Введите сообщение..." required>
+        <button type="submit" class="btn btn-orange"><i class="ti ti-send"></i></button>
+      </form>
+    </div>
+  `;
+}
+
+async function loadChat(taskId) {
+  try {
+    const d = await api('/chat/' + taskId);
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+    container.innerHTML = d.messages.map(m => `
+      <div class="flex ${m.sender_id === user?.id ? 'justify-end' : 'justify-start'}">
+        <div class="max-w-[80%] ${m.sender_id === user?.id ? 'bg-brand/20 border-brand/30' : 'bg-white/[0.05] border-white/[0.08]'} p-3 rounded-xl border">
+          <p class="text-xs text-white/40 mb-1">${esc(m.sender_name||'')}</p>
+          <p class="text-sm">${esc(m.content)}</p>
+          <p class="text-xs text-white/20 mt-1">${fmtDate(m.created_at)}</p>
+        </div>
+      </div>
+    `).join('');
+    container.scrollTop = container.scrollHeight;
+  } catch(e) { toast('Ошибка загрузки чата: ' + e.message, 'error'); }
+}
+
+async function handleSendMessage(e, taskId) {
+  e.preventDefault();
+  const input = document.getElementById('chat-input');
+  const content = input.value;
+  input.value = '';
+  try {
+    await api('/chat/' + taskId, { method: 'POST', body: JSON.stringify({ content }) });
+    loadChat(taskId);
+  } catch(err) { toast(err.message, 'error'); input.value = content; }
+}
+
+// ─── REVIEWS ──────────────────────────────────────────────
+function renderReviewsBlock(task) {
+  return `
+    <div class="glass p-5 mt-4">
+      <h3 class="font-jakarta font-bold mb-4">Оставить отзыв</h3>
+      <form onsubmit="handleReview(event, ${task.id})" class="space-y-4 max-w-xl">
+        <div>
+          <label class="block text-xs font-semibold text-white/50 mb-2">Оценка</label>
+          <div class="flex gap-2 text-2xl" id="star-rating">
+            ${[1,2,3,4,5].map(i => `<span onclick="setRating(${i})" class="cursor-pointer transition-colors hover:text-yellow-400 text-white/20" data-star="${i}">★</span>`).join('')}
+          </div>
+          <input type="hidden" id="review-rating" value="5">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-white/50 mb-1">Комментарий</label>
+          <textarea id="review-comment" class="input" rows="3"></textarea>
+        </div>
+        <div id="review-error" class="text-red-400 text-sm hidden"></div>
+        <button type="submit" class="btn btn-orange">Отправить отзыв</button>
+      </form>
+    </div>
+  `;
+}
+
+function setRating(n) {
+  document.getElementById('review-rating').value = n;
+  document.querySelectorAll('#star-rating span').forEach(s => {
+    s.style.color = parseInt(s.dataset.star) <= n ? '#facc15' : 'rgba(255,255,255,0.2)';
+  });
+}
+
+async function handleReview(e, taskId) {
+  e.preventDefault();
+  try {
+    await api('/reviews', {
+      method: 'POST',
+      body: JSON.stringify({
+        task_id: taskId,
+        rating: parseInt(document.getElementById('review-rating').value),
+        comment: document.getElementById('review-comment').value
+      })
+    });
+    toast('Отзыв оставлен!', 'success');
+    navigate('/tasks/' + taskId);
+  } catch(err) {
+    const el = document.getElementById('review-error');
+    el.textContent = err.message; el.classList.remove('hidden');
+  }
+}
+
+// ─── PROFILE ──────────────────────────────────────────────
+async function renderMyProfile(el) {
+  try {
+    if (!token) { el.innerHTML = '<div class="glass p-10 text-center"><p class="text-white/40">Войдите, чтобы увидеть профиль</p></div>'; return; }
+    const d = await api('/users/' + user.id);
+    renderProfileView(el, d);
+  } catch(e) { el.innerHTML = `<p class="text-red-400">${esc(e.message)}</p>`; }
+}
+
+async function renderUserProfile(el, id) {
+  try {
+    const d = await api('/users/' + id);
+    renderProfileView(el, d);
+  } catch(e) { el.innerHTML = `<p class="text-red-400">${esc(e.message)}</p>`; }
+}
+
+function renderProfileView(el, d) {
+  const isOwn = token && d.id === user.id;
+  const p = d.performer_profile || {};
+
+  el.innerHTML = `
+    <div class="max-w-2xl mx-auto">
+      <div class="glass p-6 text-center mb-4">
+        <img src="${d.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(d.name)}&backgroundColor=FF4F00`}" class="w-20 h-20 rounded-full mx-auto mb-3">
+        <h1 class="font-jakarta text-xl font-bold">${esc(d.name)}</h1>
+        <div class="flex items-center justify-center gap-2 mt-1">
+          ${roleBadge(d.role)}
+          <span class="text-sm text-white/40">${esc(d.city||'')}</span>
+        </div>
+        ${d.rating ? `<div class="mt-2 text-yellow-400 text-lg">${'★'.repeat(Math.round(d.rating))}${'☆'.repeat(5-Math.round(d.rating))} <span class="text-sm text-white/40">${d.rating.toFixed(1)} (${d.review_count||0})</span></div>` : ''}
+        ${d.bio ? `<p class="text-white/50 text-sm mt-3 max-w-md mx-auto">${esc(d.bio)}</p>` : ''}
+        ${d.website ? `<a href="${esc(d.website)}" target="_blank" class="text-brand text-sm hover:underline mt-2 inline-block">${esc(d.website)}</a>` : ''}
+        ${isOwn ? `<div class="mt-4"><a href="#/settings" class="btn btn-ghost btn-sm"><i class="ti ti-edit"></i>Редактировать</a></div>` : ''}
+      </div>
+
+      ${d.role === 'performer' ? `
+        <div class="glass p-5 mb-4">
+          <h3 class="font-jakarta font-bold mb-3">О профиле</h3>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            ${p.specialization ? `<div><span class="text-white/40">Специализация</span><p>${esc(p.specialization)}</p></div>` : ''}
+            ${p.hourly_rate ? `<div><span class="text-white/40">Ставка</span><p>${p.hourly_rate} ₽/час</p></div>` : ''}
+            ${p.availability ? `<div><span class="text-white/40">Доступность</span><p>${p.availability === 'free' ? 'Свободен' : p.availability === 'busy' ? 'Занят' : 'Частично'}</p></div>` : ''}
+            ${p.experience ? `<div class="col-span-2"><span class="text-white/40">Опыт</span><p>${esc(p.experience)}</p></div>` : ''}
+          </div>
+          ${p.skills?.length ? `<div class="flex flex-wrap gap-2 mt-3">${p.skills.map(s => `<span class="badge badge-gray">${esc(s)}</span>`).join('')}</div>` : ''}
+          ${p.languages?.length ? `<div class="mt-3 text-sm"><span class="text-white/40">Языки: </span>${p.languages.join(', ')}</div>` : ''}
+        </div>
+      ` : ''}
+
+      ${d.reviews?.length ? `
+        <div class="glass p-5">
+          <h3 class="font-jakarta font-bold mb-3">Отзывы (${d.review_count||d.reviews.length})</h3>
+          <div class="space-y-3">
+            ${d.reviews.map(r => `
+              <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-yellow-400 text-sm">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+                  <span class="text-xs text-white/30">${fmtDate(r.created_at)}</span>
+                </div>
+                ${r.comment ? `<p class="text-sm text-white/60">${esc(r.comment)}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderProfileView(el, d) {
+  const isOwn = token && d.id === user.id;
+  const p = d.performer_profile || {};
+  const c = d.client_profile || {};
+  const reviews = d.reviews || [];
+  const avatar = d.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(d.name)}&backgroundColor=FF4F00`;
+  const rating = Math.round(d.rating || 0);
+
+  el.innerHTML = `
+    <div class="max-w-6xl mx-auto space-y-4">
+      <div class="glass p-6 md:p-7 overflow-hidden relative">
+        <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-r ${d.role === 'performer' ? 'from-[#BF00FF]/25 via-[#FF4F00]/15' : 'from-[#FF4F00]/25 via-yellow-500/10'} to-transparent pointer-events-none"></div>
+        <div class="relative flex flex-col lg:flex-row lg:items-end gap-5">
+          <img src="${avatar}" class="w-24 h-24 rounded-2xl border border-white/10 bg-white/5 shadow-xl">
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              ${roleBadge(d.role)}
+              ${d.role === 'performer' && p.availability ? `<span class="badge ${availabilityClass(p.availability)}">${availabilityLabel(p.availability)}</span>` : ''}
+              ${d.company ? `<span class="badge badge-gray"><i class="ti ti-building"></i>${esc(d.company)}</span>` : ''}
+            </div>
+            <h1 class="font-jakarta text-2xl md:text-3xl font-extrabold tracking-tight">${esc(d.name)}</h1>
+            <p class="text-sm text-white/45 mt-1">${[d.city, d.country].filter(Boolean).map(esc).join(', ') || 'Локация не указана'}</p>
+            <div class="flex flex-wrap items-center gap-3 mt-3 text-sm">
+              <span class="text-yellow-400">${'★'.repeat(rating)}${'☆'.repeat(5-rating)}</span>
+              <span class="text-white/40">${Number(d.rating || 0).toFixed(1)} · ${d.review_count||0} отзывов</span>
+              <span class="text-white/25">на платформе с ${new Date(d.created_at).toLocaleDateString('ru-RU', { month:'long', year:'numeric' })}</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            ${isOwn ? `<a href="#/settings" class="btn btn-orange btn-sm"><i class="ti ti-edit"></i>Заполнить профиль</a>` : ''}
+            ${d.website ? `<a href="${esc(d.website)}" target="_blank" class="btn btn-ghost btn-sm"><i class="ti ti-external-link"></i>Сайт</a>` : ''}
+          </div>
+        </div>
+      </div>
+
+      ${d.role === 'performer' ? `
+        <div class="grid lg:grid-cols-[1fr_1.1fr] gap-4">
+          <div class="glass p-5 space-y-5">
+            <div>
+              <p class="text-xs uppercase tracking-wider text-white/35 mb-2">Специализация</p>
+              <h2 class="font-jakarta text-xl font-bold">${esc(p.specialization || 'Специализация не указана')}</h2>
+              <p class="text-white/55 text-sm mt-3 leading-relaxed">${esc(d.bio || p.experience || 'Исполнитель пока не описал свой подход, опыт и типовые задачи.')}</p>
+            </div>
+            ${p.skills?.length ? `<div><p class="text-xs uppercase tracking-wider text-white/35 mb-2">Навыки</p><div class="flex flex-wrap gap-2">${p.skills.map(s => `<span class="badge badge-gray">${esc(s)}</span>`).join('')}</div></div>` : ''}
+            ${p.experience ? `<div><p class="text-xs uppercase tracking-wider text-white/35 mb-2">Опыт</p><p class="text-sm text-white/70 whitespace-pre-wrap">${esc(p.experience)}</p></div>` : ''}
+            ${p.portfolio_links?.length ? `<div><p class="text-xs uppercase tracking-wider text-white/35 mb-2">Портфолио</p><div class="grid sm:grid-cols-2 gap-2">${p.portfolio_links.map((link,i)=>`<a href="${esc(link)}" target="_blank" class="p-3 bg-white/[0.035] border border-white/[0.06] rounded-xl text-sm text-brand hover:border-brand/40 transition-colors"><i class="ti ti-link"></i> Работа ${i+1}</a>`).join('')}</div></div>` : ''}
+          </div>
+          <div class="space-y-4">
+            <div class="grid grid-cols-4 gap-3">
+              ${statTile('Ставка', p.hourly_rate ? `${p.hourly_rate} ₽` : '—', 'ti-currency-rubel')}
+              ${statTile('Завершено', d.completed_count || 0, 'ti-circle-check')}
+              ${statTile('Отклики', d.performer_stats?.sent_offers || 0, 'ti-file-certificate')}
+              ${statTile('Принято', d.performer_stats?.accepted_offers || 0, 'ti-thumb-up')}
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="glass p-5">
+                <h3 class="font-jakarta font-bold mb-3">Рабочие параметры</h3>
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between gap-3"><span class="text-white/40">Доступность</span><span>${availabilityLabel(p.availability)}</span></div>
+                  <div class="flex justify-between gap-3"><span class="text-white/40">Языки</span><span>${p.languages?.length ? p.languages.map(esc).join(', ') : 'Не указаны'}</span></div>
+                  <div class="flex justify-between gap-3"><span class="text-white/40">Рейтинг</span><span>${Number(d.rating || 0).toFixed(1)}</span></div>
+                </div>
+              </div>
+              <div class="glass p-5 flex flex-col justify-center items-center text-center">
+                <p class="text-xs uppercase tracking-wider text-white/35 mb-2">На платформе</p>
+                <p class="font-jakarta text-lg font-bold">${new Date(d.created_at).toLocaleDateString('ru-RU', { month:'long', year:'numeric' })}</p>
+                <p class="text-xs text-white/40 mt-1">${d.city ? esc(d.city) + (d.country ? ', ' + esc(d.country) : '') : 'Локация не указана'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${d.role === 'client' ? `
+        <div class="grid lg:grid-cols-[1fr_1.1fr] gap-4">
+          <div class="glass p-5 space-y-5">
+            <div>
+              <p class="text-xs uppercase tracking-wider text-white/35 mb-2">Профиль заказчика</p>
+              <h2 class="font-jakarta text-xl font-bold">${esc(d.company || 'Частный заказчик')}</h2>
+              <p class="text-white/55 text-sm mt-3 leading-relaxed">${esc(d.bio || 'Заказчик пока не описал компанию, тип проектов и формат взаимодействия с исполнителями.')}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              ${statTile('Задач всего', c.published_tasks || d.task_count || 0, 'ti-list-check')}
+              ${statTile('Открытые', c.open_tasks || 0, 'ti-speakerphone')}
+              ${statTile('В работе', c.active_tasks || 0, 'ti-briefcase')}
+              ${statTile('Откликов', c.total_offers || 0, 'ti-messages')}
+            </div>
+            ${isOwn ? `<div class="flex flex-wrap gap-2 pt-2"><a href="#/create" class="btn btn-orange btn-sm"><i class="ti ti-plus-circle"></i>Создать задачу</a><a href="#/my-tasks" class="btn btn-ghost btn-sm"><i class="ti ti-list"></i>Мои задачи</a></div>` : ''}
+          </div>
+          <div class="glass p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-jakarta font-bold">Последние задачи</h3>
+              ${isOwn ? `<a href="#/my-tasks" class="text-xs text-brand hover:underline">Все задачи</a>` : ''}
+            </div>
+            ${d.recent_tasks?.length ? `<div class="space-y-2">${d.recent_tasks.map(t=>`<a href="#/tasks/${t.id}" class="block p-3 bg-white/[0.035] border border-white/[0.06] rounded-xl hover:border-brand/40 transition-colors"><div class="flex items-center gap-2 mb-1">${statusBadge(t.status)}<span class="badge badge-gray">${CAT_LABELS[t.category]||t.category}</span></div><div class="font-medium text-sm">${esc(t.title)}</div><div class="text-xs text-white/35 mt-1">${fmtMoney(t.budget)} · ${t.offer_count||0} откликов</div></a>`).join('')}</div>` : `<div class="p-8 text-center text-white/35 bg-white/[0.025] border border-white/[0.05] rounded-xl"><i class="ti ti-folder-open text-4xl block mb-2 text-white/20"></i>Публичных задач пока нет</div>`}
+          </div>
+        </div>
+      ` : ''}
+
+      ${reviews.length ? `
+        <div class="glass p-5">
+          <h3 class="font-jakarta font-bold mb-3">Отзывы (${d.review_count||reviews.length})</h3>
+          <div class="space-y-3">
+            ${reviews.map(r => `
+              <div class="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-yellow-400 text-sm">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+                  <span class="text-xs text-white/30">${esc(r.reviewer_name || '')} · ${fmtDate(r.created_at)}</span>
+                </div>
+                ${r.comment ? `<p class="text-sm text-white/60">${esc(r.comment)}</p>` : ''}
+                ${r.likes ? `<p class="text-xs text-white/40 mt-2"><span class="text-white/60">Что понравилось:</span> ${esc(r.likes)}</p>` : ''}
+                ${r.improvements ? `<p class="text-xs text-white/40 mt-1"><span class="text-white/60">Что улучшить:</span> ${esc(r.improvements)}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : `
+        <div class="glass p-5 text-center text-white/35">
+          <i class="ti ti-star-off text-4xl text-white/20 block mb-2"></i>
+          Отзывов пока нет
+        </div>
+      `}
+    </div>
+  `;
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────
+async function renderNotifications(el) {
+  try {
+    const d = await api('/notifications');
+    const notifs = d.notifications || [];
+
+    el.innerHTML = `
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-jakarta text-xl font-bold">Уведомления</h1>
+        ${notifs.some(n => !n.seen) ? `<button onclick="markAllSeen()" class="btn btn-ghost btn-sm"><i class="ti ti-check-all"></i>Все прочитаны</button>` : ''}
+      </div>
+      ${notifs.length === 0 ? `
+        <div class="glass p-12 text-center">
+          <i class="ti ti-bell-off text-5xl text-white/20 block mb-4"></i>
+          <p class="text-white/40">Нет уведомлений</p>
+        </div>
+      ` : `
+        <div class="space-y-2">
+          ${notifs.map(n => `
+            <div class="glass p-4 flex items-start gap-3 ${n.seen ? 'opacity-50' : 'border-l-4 border-brand'}" onclick="markSeen(${n.id})">
+              <div class="flex-1">
+                <p class="text-sm ${n.seen ? '' : 'font-medium'}">${esc(n.type)}</p>
+                <p class="text-xs text-white/40 mt-1">${fmtDate(n.created_at)}</p>
+              </div>
+              ${!n.seen ? '<i class="ti ti-circle-filled text-brand text-xs mt-1"></i>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      `}
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">${esc(e.message)}</p>`; }
+}
+
+async function markSeen(id) {
+  try { await api('/notifications/' + id + '/seen', { method: 'PATCH' }); updateNotifBadge(); } catch {}
+}
+
+async function markAllSeen() {
+  try { await api('/notifications/seen-all', { method: 'PATCH' }); toast('Все прочитаны', 'success'); navigate('/notifications'); } catch(e) { toast(e.message, 'error'); }
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────
+async function renderSettings(el) {
+  if (!token) { el.innerHTML = '<div class="glass p-10 text-center"><p class="text-white/40">Войдите, чтобы редактировать профиль</p></div>'; return; }
+
+  try {
+    const d = await api('/users/' + user.id);
+    const p = d.performer_profile || {};
+
+    el.innerHTML = `
+      <h1 class="font-jakarta text-xl font-bold mb-6">Настройки профиля</h1>
+      <form onsubmit="handleUpdateProfile(event)" class="glass p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Имя</label>
+              <input type="text" id="prof-name" class="input" value="${esc(d.name||'')}" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Email</label>
+              <input type="email" class="input opacity-50" value="${esc(d.email||'')}" disabled>
+            </div>
+            ${d.role === 'client' ? `
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Компания / проект</label>
+                <input type="text" id="prof-company" class="input" value="${esc(d.company||'')}" placeholder="ООО Вектор, ИП, стартап или частный заказчик">
+              </div>
+            ` : ''}
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Город</label>
+                <input type="text" id="prof-city" class="input" value="${esc(d.city||'')}">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Страна</label>
+                <input type="text" id="prof-country" class="input" value="${esc(d.country||'')}">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">О себе</label>
+              <textarea id="prof-bio" class="input" rows="3">${esc(d.bio||'')}</textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Сайт</label>
+              <input type="url" id="prof-website" class="input" value="${esc(d.website||'')}">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Контакты</label>
+              <input type="text" id="prof-contact" class="input" value="${esc(d.contact||'')}">
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            ${d.role === 'performer' ? `
+              <div class="p-4 bg-[#BF00FF]/10 border border-[#BF00FF]/20 rounded-xl">
+                <h3 class="font-jakarta font-bold text-white/90 mb-1">Профиль исполнителя</h3>
+                <p class="text-xs text-white/45">Эти поля видит заказчик, когда сравнивает отклики и выбирает исполнителя.</p>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Специализация</label>
+                <input type="text" id="prof-spec" class="input" value="${esc(p.specialization||'')}">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Навыки (через запятую)</label>
+                <input type="text" id="prof-skills" class="input" value="${esc((p.skills||[]).join(', '))}">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Опыт</label>
+                <textarea id="prof-exp" class="input" rows="3" placeholder="Сколько лет опыта, какие задачи делаете, с какими клиентами работаете">${esc(p.experience||'')}</textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Портфолио (ссылки через запятую)</label>
+                <input type="text" id="prof-portfolio" class="input" value="${esc((p.portfolio_links||[]).join(', '))}" placeholder="https://portfolio.ru, https://behance.net/...">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Языки (через запятую)</label>
+                <input type="text" id="prof-languages" class="input" value="${esc((p.languages||[]).join(', '))}" placeholder="Русский, Английский">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Ставка (₽/час)</label>
+                  <input type="number" id="prof-rate" class="input" value="${p.hourly_rate||''}">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Доступность</label>
+                  <select id="prof-avail" class="input">
+                    <option value="free" ${p.availability==='free'?'selected':''}>Свободен</option>
+                    <option value="busy" ${p.availability==='busy'?'selected':''}>Занят</option>
+                    <option value="partial" ${p.availability==='partial'?'selected':''}>Частично</option>
+                  </select>
+                </div>
+              </div>
+            ` : `
+              <div class="p-4 bg-[#FF4F00]/10 border border-[#FF4F00]/20 rounded-xl">
+                <h3 class="font-jakarta font-bold text-white/90 mb-1">Профиль заказчика</h3>
+                <p class="text-xs text-white/45">Этот блок помогает исполнителям понять, кто публикует задачу, насколько живой проект и как с вами работать.</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                ${statTile('Задач', d.client_profile?.published_tasks || d.task_count || 0, 'ti-list-check')}
+                ${statTile('Завершено', d.client_profile?.completed_tasks || d.completed_count || 0, 'ti-circle-check')}
+              </div>
+            `}
+
+            <div class="pt-4 border-t border-white/[0.06]">
+              <h3 class="font-jakarta font-bold text-white/80 mb-3">Сменить пароль</h3>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Текущий пароль</label>
+                  <input type="password" id="pass-current" class="input">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-white/50 mb-1 uppercase">Новый пароль</label>
+                  <input type="password" id="pass-new" class="input" minlength="6">
+                </div>
+                <button type="button" onclick="handleChangePass()" class="btn btn-ghost btn-sm w-full">Сменить пароль</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="profile-error" class="text-red-400 text-sm hidden mt-4"></div>
+        <div class="flex gap-3 pt-4 mt-4 border-t border-white/[0.06]">
+          <button type="submit" class="btn btn-orange py-2.5 px-8">Сохранить</button>
+        </div>
+      </form>
+    `;
+  } catch(e) { el.innerHTML = `<p class="text-red-400">${esc(e.message)}</p>`; }
+}
+
+async function handleUpdateProfile(e) {
+  e.preventDefault();
+  try {
+    const skills = document.getElementById('prof-skills')?.value.split(',').map(s=>s.trim()).filter(Boolean) || [];
+    const portfolio_links = document.getElementById('prof-portfolio')?.value.split(',').map(s=>s.trim()).filter(Boolean) || [];
+    const languages = document.getElementById('prof-languages')?.value.split(',').map(s=>s.trim()).filter(Boolean) || [];
+    await api('/users/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: document.getElementById('prof-name').value,
+        company: document.getElementById('prof-company')?.value,
+        city: document.getElementById('prof-city').value,
+        country: document.getElementById('prof-country').value,
+        bio: document.getElementById('prof-bio').value,
+        website: document.getElementById('prof-website').value,
+        contact: document.getElementById('prof-contact').value,
+        specialization: document.getElementById('prof-spec')?.value,
+        skills,
+        experience: document.getElementById('prof-exp')?.value,
+        portfolio_links,
+        languages,
+        hourly_rate: parseFloat(document.getElementById('prof-rate')?.value) || 0,
+        availability: document.getElementById('prof-avail')?.value
+      })
+    });
+    toast('Профиль обновлён', 'success');
+    route();
+  } catch(err) {
+    const el = document.getElementById('profile-error');
+    el.textContent = err.message; el.classList.remove('hidden');
+  }
+}
+
+async function handleChangePass() {
+  const current = document.getElementById('pass-current').value;
+  const newPass = document.getElementById('pass-new').value;
+  if (!current || !newPass) { toast('Заполните оба поля', 'warning'); return; }
+  try {
+    await api('/users/password', { method: 'PUT', body: JSON.stringify({ currentPassword: current, newPassword: newPass }) });
+    toast('Пароль изменён', 'success');
+    document.getElementById('pass-current').value = '';
+    document.getElementById('pass-new').value = '';
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+showApp();
+</script>
+</body>
+</html>

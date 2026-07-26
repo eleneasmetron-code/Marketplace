@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+server-run.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
+coverage/
+
+# Temp files
+tmp/
+temp/
+
+# Uploads (user-generated content)
+uploads/
+
+# Test/dev tool artifacts
+.playwright-mcp/
+.kombai/
+__screenshots__/
+screenshots/
+
+# Dev-only files (not for repo)
+angel.md
+check.md
+check-landing*.png
+текст озвучки.txt
+12_Marketplace_MVP_TZ.txt
+
+# Old Next.js artifacts (if any remain)
+src/generated/
+prisma/dev.db
